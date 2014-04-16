@@ -70,10 +70,10 @@ class JWT(Impl):
             headerobj =\
                 self._json_decode(self._b64_decode(header).decode('utf8'))
             impl = self._get_impl(headerobj['alg'], headerobj.get('enc'))
-        except ValueError:
-            raise MalformedJWT()
-        except KeyError:
-            raise InvalidJWT('\'alg\' is required')
+        except (ValueError, UnicodeDecodeError) as why:
+            raise MalformedJWT() from why
+        except KeyError as why:
+            raise InvalidJWT('\'alg\' is required') from why
         else:
             if impl.verify(headerobj, header, rest):
                 return impl, headerobj, rest
@@ -81,15 +81,24 @@ class JWT(Impl):
             raise InvalidJWT()
 
     def encode(self, headerobj, payload):
+        assert isinstance(headerobj, dict)
+        assert isinstance(payload, (str, bytes))
+
         try:
             impl = self._get_impl(headerobj['alg'], headerobj.get('enc'))
-        except KeyError:
-            raise InvalidJWT('\'alg\' is required')
+        except KeyError as why:
+            raise InvalidJWT('\'alg\' is required') from why
         else:
-            header =\
+            encoded_header =\
                 self._b64_encode(self._json_encode(headerobj).encode('utf8'))
+            if isinstance(payload, str):
+                message = payload.encode('utf8')
+            else:
+                message = payload
+
             return b'.'.join((
-                header, impl.encode(headerobj, header, payload)
+                encoded_header,
+                impl.encode(headerobj, encoded_header, message)
             ))
 
     def decode(self, jwt):
@@ -98,7 +107,7 @@ class JWT(Impl):
         if self._is_nested_jwt(headerobj):
             return self.decode(message)
 
-        return self._json_decode(self._b64_decode(message).decode('utf8'))
+        return message.decode('utf8')
 
     def verify(self, jwt):
         impl, headerobj, rest = self._parse(jwt)

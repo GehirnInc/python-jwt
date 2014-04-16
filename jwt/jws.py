@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import functools
 
 from .jwt import (
     Impl,
@@ -28,6 +29,7 @@ def signer(name):
 
 
 def hmac_signer(func):
+    @functools.wraps(func)
     def sign(key, target):
         return hmac.new(key.k, target, func()).digest()
     return sign
@@ -74,8 +76,8 @@ class JWS(Impl):
 
         try:
             return self.keys[kid]
-        except KeyError:
-            raise KeyNotFound('{kid}'.format(kid=kid))
+        except KeyError as why:
+            raise KeyNotFound('{kid}'.format(kid=kid)) from why
 
     def is_supported(self, alg, enc=None):
         return alg in SIGNERS
@@ -83,46 +85,46 @@ class JWS(Impl):
     def get_signer(self, alg):
         try:
             return SIGNERS[alg]
-        except KeyError:
-            raise NotSupported()
+        except KeyError as why:
+            raise NotSupported() from why
 
-    def encode(self, headerobj, header, payload):
+    def encode(self, headerobj, encoded_header, payload):
         assert isinstance(headerobj, dict)
+        assert isinstance(encoded_header, bytes)
         assert isinstance(payload, bytes)
 
+        if headerobj['alg'] == 'none':
+            key = None
+        else:
+            key = self.get_key(headerobj.get('kid'))
         signer = self.get_signer(headerobj['alg'])
-        signature = self._b64_encode(signer(
-            self.get_key(headerobj.get('kid')),
-            b'.'.join((header, payload))
-        ))
 
-        return b'.'.join((payload, signature))
+        encoded_payload = self._b64_encode(payload)
+        encoded_signature = self._b64_encode(signer(
+            key,
+            b'.'.join((encoded_header, encoded_payload))
+        ))
+        return b'.'.join((encoded_payload, encoded_signature))
 
     def decode(self, headerobj, rest):
         assert isinstance(headerobj, dict)
         assert isinstance(rest, bytes)
 
         try:
-            payload, _ = rest.split(b'.')
-        except ValueError:
-            raise MalformedJWS()
-        else:
-            return payload
+            encoded_payload, _ = rest.split(b'.')
+            return self._b64_decode(encoded_payload)
+        except ValueError as why:
+            raise MalformedJWS() from why
 
-    def verify(self, headerobj, header, rest):
+    def verify(self, headerobj, encoded_header, rest):
         assert isinstance(headerobj, dict)
-        assert isinstance(header, bytes)
+        assert isinstance(encoded_header, bytes)
         assert isinstance(rest, bytes)
 
         try:
-            payload, signature = rest.split(b'.')
-        except ValueError:
-            raise MalformedJWS()
+            encoded_payload, encoded_signature = rest.split(b'.')
+        except ValueError as why:
+            raise MalformedJWS() from why
         else:
-            signer = self.get_signer(headerobj['alg'])
-            expected = signer(
-                self.get_key(headerobj.get('kid')),
-                b'.'.join((header, payload))
-            )
-
-            return self._b64_decode(signature) == expected
+            payload = self._b64_decode(encoded_payload)
+            return self.encode(headerobj, encoded_header, payload) == rest
