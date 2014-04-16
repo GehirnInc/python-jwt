@@ -4,20 +4,19 @@ import os
 
 from setuptools import setup, find_packages
 
+here = os.path.dirname(__file__)
 requires = []
-tests_require=[
+tests_require = [
     'nose',
     'coverage'
 ]
 
-here = os.path.dirname(__file__)
+
 def _read(name):
     try:
         return open(os.path.join(here, name)).read()
     except:
         return ""
-
-
 readme = _read("README.md")
 license = _read("LICENSE.md")
 
