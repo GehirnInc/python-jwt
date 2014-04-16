@@ -1,17 +1,77 @@
 # -*- coding: utf-8 -*-
 
+import hashlib
+import hmac
 import json
 import unittest
 
 from .. import utils
 from ..jwk import JWK
 from ..jws import (
+    hmac_sha256,
+    hmac_sha384,
+    hmac_sha512,
+    hmac_signer,
     JWS,
     KeyNotFound,
     MalformedJWS,
+    plaintext_jwt,
+    signer,
     SIGNERS,
 )
 from ..jwt import NotSupported
+
+
+class TestSigners(unittest.TestCase):
+
+    def setUp(self):
+        self.key = JWK.decode(
+            b'{"kty":"oct",'
+            b'"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75'
+            b'aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"'
+            b'}'
+        )
+
+    def test_signer(self):
+        self.assertNotIn('test_signer', SIGNERS)
+
+        @signer('test_signer')
+        def sign(key, target):
+            return
+
+        self.assertIn('test_signer', SIGNERS)
+        self.assertIs(SIGNERS['test_signer'], sign)
+
+    def test_plaintext_jwt(self):
+        self.assertEqual(plaintext_jwt(self.key, b'test'), b'')
+
+    def test_hmac_signer(self):
+        @hmac_signer
+        def sign():
+            return hashlib.sha256
+
+        self.assertEqual(
+            sign(self.key, b'test'),
+            hmac.new(self.key.k, b'test', hashlib.sha256).digest()
+        )
+
+    def test_hs256(self):
+        self.assertEqual(
+            hmac_sha256(self.key, b'test'),
+            hmac.new(self.key.k, b'test', hashlib.sha256).digest()
+        )
+
+    def test_hs384(self):
+        self.assertEqual(
+            hmac_sha384(self.key, b'test'),
+            hmac.new(self.key.k, b'test', hashlib.sha384).digest()
+        )
+
+    def test_hs512(self):
+        self.assertEqual(
+            hmac_sha512(self.key, b'test'),
+            hmac.new(self.key.k, b'test', hashlib.sha512).digest()
+        )
 
 
 class TestJWS(unittest.TestCase):
@@ -80,14 +140,6 @@ class TestJWS(unittest.TestCase):
     def test_decode(self):
         inst = JWS(self.key1)
 
-        self.assertEqual(
-            inst.decode(
-                dict(alg='HS256'),
-                b'.t_zltwqKiJgaHhJaTBLqDWoHqRlZJIkql6t7EPsHltQ',
-            ),
-            b'',
-        )
-
         with self.assertRaises(MalformedJWS):
             inst.decode(
                 dict(alg='HS256'),
@@ -104,15 +156,12 @@ class TestJWS(unittest.TestCase):
     def test_verify(self):
         inst = JWS(self.key1)
 
+        headerobj = dict(alg='HS256')
+        header = utils.b64_encode(json.dumps(headerobj).encode('utf8'))
         payload = b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQog' +\
             b'Imh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ'
 
-        headerobj = dict(alg='HS256')
-        header = utils.b64_encode(json.dumps(headerobj).encode('utf8'))
         rest = b'.t_zltwqKiJgaHhJaTBLqDWoHqRlZJIkql6t7EPsHltQ'
-
-        self.assertTrue(inst.verify(headerobj, header, rest))
-        self.assertFalse(inst.verify(headerobj, header, payload + rest))
 
         with self.assertRaises(MalformedJWS):
             inst.verify(headerobj, header, rest[1:])
