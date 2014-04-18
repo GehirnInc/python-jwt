@@ -5,7 +5,10 @@ import hmac
 import json
 import unittest
 
-from .. import utils
+from .. import (
+    NotSupported,
+    utils,
+)
 from ..jwk import JWK
 from ..jws import (
     hmac_sha256,
@@ -19,7 +22,6 @@ from ..jws import (
     signer,
     SIGNERS,
 )
-from ..jwt import NotSupported
 
 
 class TestSigners(unittest.TestCase):

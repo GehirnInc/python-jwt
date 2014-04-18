@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import functools
 
-from .jwt import (
+from . import (
     Impl,
     NotSupported,
 )

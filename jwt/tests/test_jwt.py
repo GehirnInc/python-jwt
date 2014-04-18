@@ -4,15 +4,15 @@ import json
 import unittest
 from collections import OrderedDict
 
-from ..jws import (
-    JWS,
-    NotSupported,
-)
-from ..jwt import (
+from .. import (
     Impl,
     InvalidJWT,
     JWT,
     MalformedJWT,
+)
+from ..jws import (
+    JWS,
+    NotSupported,
 )
 
 
