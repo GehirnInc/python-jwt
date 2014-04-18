@@ -22,7 +22,7 @@ license = _read("LICENSE.md")
 
 setup(
     name='jwt',
-    version='0.0.1',
+    version='0.1.1',
     test_suite='jwt',
     author='Kohei YOSHIDA',
     author_email='kohei.yoshida@gehirn.co.jp',
