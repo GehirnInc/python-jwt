@@ -33,4 +33,16 @@ setup(
     packages=find_packages(),
     install_requires=requires,
     tests_require=tests_require,
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
+        "Topic :: Internet :: WWW/HTTP",
+        "Topic :: Security",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
 )
