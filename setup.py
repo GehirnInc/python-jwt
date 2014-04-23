@@ -17,8 +17,8 @@ def _read(name):
         return open(os.path.join(here, name)).read()
     except:
         return ""
-readme = _read("README.md")
-license = _read("LICENSE.md")
+readme = _read("README.rst")
+license = _read("LICENSE.rst")
 
 setup(
     name='jwt',
