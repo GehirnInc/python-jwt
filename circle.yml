@@ -1,0 +1,11 @@
+machine:
+    python:
+        version: 3.4.0
+    environment:
+        TOXENV: py34
+dependencies:
+    override:
+        - pip install tox
+test:
+    override:
+        - tox
