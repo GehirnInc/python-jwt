@@ -5,7 +5,9 @@ import os
 from setuptools import setup, find_packages
 
 here = os.path.dirname(__file__)
-requires = []
+requires = [
+    'PyCrypto',
+]
 tests_require = [
     'nose',
     'coverage'
