@@ -8,7 +8,6 @@ from jwt.exceptions import (
     MalformedJWT,
     UnsupportedAlgorithm,
 )
-from jwt.jws import JWS
 
 
 class JWTTest(unittest.TestCase):
