@@ -11,6 +11,7 @@ from jwt.utils import (
 
 InvalidKey = type('InvalidKey', (ValueError, ), {})
 UnsupportedKeyType = type('UnsupportedKeyType', (ValueError, ), {})
+KeyNotFound = type('KeyNotFound', (ValueError, ), {})
 
 
 __all__ = ['JWK']
@@ -193,3 +194,22 @@ class JWKSet(list):
             inst.append(JWK.from_dict(jwk))
 
         return inst
+
+    def retrive(self, kty, kid=None, needs_private=False):
+        keys = []
+        for key in self:
+            if key.kty != kty:
+                continue
+
+            if kid and key.kid != kid:
+                continue
+
+            if kty == 'RSA' and needs_private and not key.keyobj.has_private():
+                continue
+
+            keys.append(key)
+
+        if len(keys) < 1:
+            raise KeyNotFound()
+
+        return keys
