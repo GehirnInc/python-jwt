@@ -2,129 +2,194 @@
 
 import hashlib
 import hmac
-import functools
+from collections import namedtuple
+
+from Crypto.Hash import (
+    SHA256,
+    SHA384,
+    SHA512,
+)
+from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.Signature import PKCS1_v1_5
 
 from . import (
     Impl,
     NotSupported,
 )
 
+from jwt.utils import (
+    b64_decode,
+    b64_encode,
+)
+
 __all__ = ['JWS', 'MalformedJWS', 'KeyNotFound']
 
 
 MalformedJWS = type('MalformedJWS', (ValueError, ), {})
-
-
 KeyNotFound = type('KeyNotFound', (ValueError, ), {})
-
-
-SIGNERS = {}
-
-
-def signer(name):
-    def receive(func):
-        SIGNERS[name] = func
-        return func
-    return receive
-
-
-def hmac_signer(func):
-    @functools.wraps(func)
-    def sign(key, target):
-        return hmac.new(key.k, target, func()).digest()
-    return sign
-
-
-@signer('none')
-def plaintext_jwt(key, target):
-    return b''
-
-
-@signer('HS256')
-@hmac_signer
-def hmac_sha256():
-    return hashlib.sha256
-
-
-@signer('HS384')
-@hmac_signer
-def hmac_sha384():
-    return hashlib.sha384
-
-
-@signer('HS512')
-@hmac_signer
-def hmac_sha512():
-    return hashlib.sha512
+InvalidKeyType = type('InvalidKeyType', (ValueError, ), {})
 
 
 class JWS(Impl):
 
-    def __init__(self, default_key=None):
-        self.default_key = default_key
-        self.keys = {}
+    REGISTRY = {}
 
-    def register_key(self, kid, key):
-        self.keys[kid] = key
+    def __init__(self, keys):
+        self.keys = keys
 
-    def get_key(self, kid=None):
-        if kid is None:
-            if self.default_key is None:
-                raise KeyNotFound()
-
-            return self.default_key
-
-        try:
-            return self.keys[kid]
-        except KeyError as why:
-            raise KeyNotFound('{kid}'.format(kid=kid)) from why
-
-    def is_supported(self, alg, enc=None):
-        return alg in SIGNERS
+    def is_supported(self, alg):
+        return alg in self.REGISTRY
 
     def get_signer(self, alg):
         try:
-            return SIGNERS[alg]
+            return self.REGISTRY[alg]
         except KeyError as why:
-            raise NotSupported() from why
+            raise NotSupported(alg) from why
+
+    def get_keys(self, alg, kid=None, needs_private=False):
+        if alg.startswith('HS'):
+            kty = 'oct'
+        elif alg.startswith('RS'):
+            kty = 'RSA'
+        else:
+            raise KeyNotFound()
+
+        return self.keys.retrive(kty, kid, needs_private)
+
+    def sign(self, alg, message, kid=None):
+        assert isinstance(message, bytes)
+        signer = self.get_signer(alg)
+
+        if alg == 'none':
+            return signer.sign(None, message)
+
+        for key in self.get_keys(alg, kid, True):
+            try:
+                return signer.sign(key.keyobj, message)
+            except BaseException:
+                continue
+
+        raise KeyNotFound()
+
+    def _signing_message(self, encoded_header, encoded_payload):
+        return '.'.join((encoded_header, encoded_payload)).encode('ascii')
+
+    def verify(self, headerobj, encoded_header, rest):
+        assert isinstance(headerobj, dict)
+        assert isinstance(encoded_header, str)
+        assert isinstance(rest, str)
+
+        try:
+            encoded_payload, encoded_signature = rest.split('.')
+            signature = b64_decode(encoded_signature)
+        except ValueError as why:
+            raise MalformedJWS() from why
+        else:
+            msg = self._signing_message(encoded_header, encoded_payload)
+
+            signer = self.get_signer(headerobj['alg'])
+            for key in self.get_keys(headerobj['alg'], headerobj.get('kid')):
+                if signer.verify(key.keyobj, msg, signature):
+                    return True
+
+            return False
 
     def encode(self, headerobj, encoded_header, payload):
         assert isinstance(headerobj, dict)
-        assert isinstance(encoded_header, bytes)
+        assert isinstance(encoded_header, str)
         assert isinstance(payload, bytes)
 
-        if headerobj['alg'] == 'none':
-            key = None
-        else:
-            key = self.get_key(headerobj.get('kid'))
-        signer = self.get_signer(headerobj['alg'])
+        encoded_payload = b64_encode(payload)
+        encoded_signature = b64_encode(self.sign(
+            headerobj['alg'],
+            self._signing_message(encoded_header, encoded_payload)))
 
-        encoded_payload = self._b64_encode(payload)
-        encoded_signature = self._b64_encode(signer(
-            key,
-            b'.'.join((encoded_header, encoded_payload))
-        ))
-        return b'.'.join((encoded_payload, encoded_signature))
+        return '.'.join((encoded_payload, encoded_signature))
 
     def decode(self, headerobj, rest):
         assert isinstance(headerobj, dict)
-        assert isinstance(rest, bytes)
+        assert isinstance(rest, str)
 
         try:
-            encoded_payload, _ = rest.split(b'.')
+            encoded_payload, _ = rest.split('.')
             return self._b64_decode(encoded_payload)
         except ValueError as why:
             raise MalformedJWS() from why
 
-    def verify(self, headerobj, encoded_header, rest):
-        assert isinstance(headerobj, dict)
-        assert isinstance(encoded_header, bytes)
-        assert isinstance(rest, bytes)
+    @classmethod
+    def register(cls, alg):
+        def receiver(func):
+            sign, verify = func()
 
-        try:
-            encoded_payload, encoded_signature = rest.split(b'.')
-        except ValueError as why:
-            raise MalformedJWS() from why
-        else:
-            payload = self._b64_decode(encoded_payload)
-            return self.encode(headerobj, encoded_header, payload) == rest
+            signer = namedtuple(alg, ['sign', 'verify'])
+            signer.sign = sign
+            signer.verify = verify
+            cls.REGISTRY[alg] = signer
+            return signer
+        return receiver
+
+
+def hmac_signer(name, hashfunc):
+
+    @JWS.register(name)
+    def signer():
+
+        def sign(key, message):
+            if not isinstance(key, bytes):
+                raise InvalidKeyType('Required oct key')
+
+            return hmac.new(key, message, hashfunc).digest()
+
+        def verify(key, message, signature):
+            if not isinstance(key, bytes):
+                raise InvalidKeyType('Required oct key')
+
+            return sign(key, message) == signature
+
+        return (sign, verify)
+
+    return signer
+
+
+def rsa_signer(name, hashfunc):
+
+    @JWS.register(name)
+    def signer():
+
+        def sign(key, message):
+            if not isinstance(key, _RSAobj):
+                raise InvalidKeyType('Required RSA key')
+
+            signer = PKCS1_v1_5.new(key)
+            message_hash = hashfunc.new(message)
+            return signer.sign(message_hash)
+
+        def verify(key, message, signature):
+            if not isinstance(key, _RSAobj):
+                raise InvalidKeyType('Required RSA key')
+
+            verifier = PKCS1_v1_5.new(key)
+            message_hash = hashfunc.new(message)
+            return verifier.verify(message_hash, signature)
+
+        return (sign, verify)
+
+    return signer
+
+
+@JWS.register('none')
+def plaintext_jwt():
+    return (
+        lambda key, message: b'',
+        lambda key, message, signature: signature == b''
+    )
+
+
+hs256 = hmac_signer('HS256', hashlib.sha256)
+hs384 = hmac_signer('HS384', hashlib.sha384)
+hs512 = hmac_signer('HS512', hashlib.sha512)
+
+
+rs256 = rsa_signer('RS256', SHA256)
+rs384 = rsa_signer('RS384', SHA384)
+rs512 = rsa_signer('RS512', SHA512)
