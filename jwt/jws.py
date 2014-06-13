@@ -12,14 +12,13 @@ from Crypto.Hash import (
 from Crypto.PublicKey.RSA import _RSAobj
 from Crypto.Signature import PKCS1_v1_5
 
-from jwt import Impl
-
 from jwt.exceptions import (
     InvalidKeyType,
     KeyNotFound,
     MalformedJWT,
     UnsupportedAlgorithm,
 )
+from jwt.interfaces import Impl
 from jwt.utils import (
     b64_decode,
     b64_encode,
@@ -86,6 +85,9 @@ class JWS(Impl):
             msg = self._signing_message(encoded_header, encoded_payload)
 
             signer = self.get_signer(headerobj['alg'])
+            if headerobj['alg'] == 'none':
+                return signer.verify(None, msg, signature)
+
             for key in self.get_keys(headerobj['alg'], headerobj.get('kid')):
                 if signer.verify(key.keyobj, msg, signature):
                     return True
@@ -110,7 +112,7 @@ class JWS(Impl):
 
         try:
             encoded_payload, _ = rest.split('.')
-            return self._b64_decode(encoded_payload)
+            return b64_decode(encoded_payload)
         except ValueError as why:
             raise MalformedJWT() from why
 
