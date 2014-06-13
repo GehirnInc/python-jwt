@@ -2,7 +2,7 @@
 
 import unittest
 
-from .. import utils
+from jwt import utils
 
 
 class TestUtils(unittest.TestCase):

@@ -2,16 +2,16 @@
 
 from Crypto.PublicKey import RSA
 
+from jwt.exceptions import (
+    KeyNotFound,
+    UnsupportedKeyType,
+)
 from jwt.utils import (
     b64_decode,
     b64_encode,
     base64_to_int,
     int_to_base64,
 )
-
-InvalidKey = type('InvalidKey', (ValueError, ), {})
-UnsupportedKeyType = type('UnsupportedKeyType', (ValueError, ), {})
-KeyNotFound = type('KeyNotFound', (ValueError, ), {})
 
 
 __all__ = ['JWK']

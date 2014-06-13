@@ -4,16 +4,15 @@ import json
 import unittest
 from collections import OrderedDict
 
-from .. import (
+from jwt import (
     Impl,
-    InvalidJWT,
     JWT,
+)
+from jwt.exceptions import (
     MalformedJWT,
+    UnsupportedAlgorithm,
 )
-from ..jws import (
-    JWS,
-    NotSupported,
-)
+from jwt.jws import JWS
 
 
 class ImplTest(unittest.TestCase):
@@ -81,12 +80,12 @@ class JWTTest(unittest.TestCase):
 
     def test_encode_unknown_alg(self):
         inst = JWT(self.jws)
-        with self.assertRaises(NotSupported):
+        with self.assertRaises(UnsupportedAlgorithm):
             inst.encode(dict(alg='unknown'), '')
 
     def test_encode_invalid_header(self):
         inst = JWT(self.jws)
-        with self.assertRaises(InvalidJWT):
+        with self.assertRaises(MalformedJWT):
             inst.encode(dict(), '')
 
     def test_encode_nested(self):
@@ -134,7 +133,7 @@ class JWTTest(unittest.TestCase):
             b'cGxlLmNvbS9pc19yb290Ijp0cnVlfQ',
             b'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
         ))
-        with self.assertRaises(InvalidJWT):
+        with self.assertRaises(MalformedJWT):
             inst.decode(ret)
 
     def test_decode_invalid_signature(self):
@@ -145,7 +144,7 @@ class JWTTest(unittest.TestCase):
             b'cGxlLmNvbS9pc19yb290Ijp0cnVlfQ',
             b'invalidsignature',
         ))
-        with self.assertRaises(InvalidJWT):
+        with self.assertRaises(MalformedJWT):
             inst.decode(ret)
 
     def test_decode_nested(self):

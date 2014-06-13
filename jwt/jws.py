@@ -12,22 +12,20 @@ from Crypto.Hash import (
 from Crypto.PublicKey.RSA import _RSAobj
 from Crypto.Signature import PKCS1_v1_5
 
-from . import (
-    Impl,
-    NotSupported,
-)
+from jwt import Impl
 
+from jwt.exceptions import (
+    InvalidKeyType,
+    KeyNotFound,
+    MalformedJWT,
+    UnsupportedAlgorithm,
+)
 from jwt.utils import (
     b64_decode,
     b64_encode,
 )
 
-__all__ = ['JWS', 'MalformedJWS', 'KeyNotFound']
-
-
-MalformedJWS = type('MalformedJWS', (ValueError, ), {})
-KeyNotFound = type('KeyNotFound', (ValueError, ), {})
-InvalidKeyType = type('InvalidKeyType', (ValueError, ), {})
+__all__ = ['JWS']
 
 
 class JWS(Impl):
@@ -44,7 +42,7 @@ class JWS(Impl):
         try:
             return self.REGISTRY[alg]
         except KeyError as why:
-            raise NotSupported(alg) from why
+            raise UnsupportedAlgorithm(alg) from why
 
     def get_keys(self, alg, kid=None, needs_private=False):
         if alg.startswith('HS'):
@@ -83,7 +81,7 @@ class JWS(Impl):
             encoded_payload, encoded_signature = rest.split('.')
             signature = b64_decode(encoded_signature)
         except ValueError as why:
-            raise MalformedJWS() from why
+            raise MalformedJWT() from why
         else:
             msg = self._signing_message(encoded_header, encoded_payload)
 
@@ -114,7 +112,7 @@ class JWS(Impl):
             encoded_payload, _ = rest.split('.')
             return self._b64_decode(encoded_payload)
         except ValueError as why:
-            raise MalformedJWS() from why
+            raise MalformedJWT() from why
 
     @classmethod
     def register(cls, alg):

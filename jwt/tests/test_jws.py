@@ -176,16 +176,16 @@ class TestJWS(unittest.TestCase):
     def test_get_signer(self):
         inst = self.target(self.keys)
 
+        from jwt.exceptions import UnsupportedAlgorithm
         from jwt.jws import (
             hs256,
             rs256,
-            NotSupported,
         )
 
         self.assertEqual(inst.get_signer('HS256'), hs256)
         self.assertEqual(inst.get_signer('RS256'), rs256)
 
-        with self.assertRaises(NotSupported):
+        with self.assertRaises(UnsupportedAlgorithm):
             inst.get_signer('unknownalg')
 
     def test_get_keys(self):
@@ -224,7 +224,7 @@ class TestJWS(unittest.TestCase):
             b'|\x84!`R\x17n\xdeV\x17D\x1fdv\x13\x80\x04\xec\x94')
 
     def test_verify(self):
-        from jwt.jws import MalformedJWS
+        from jwt.exceptions import MalformedJWT
 
         inst = self.target(self.keys)
         encoded_payload = 'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQog' +\
@@ -243,7 +243,7 @@ class TestJWS(unittest.TestCase):
             headerobj, encoded_header,
             '{payload}.dummysignature'.format(payload=encoded_payload)))
 
-        with self.assertRaises(MalformedJWS):
+        with self.assertRaises(MalformedJWT):
             inst.verify(headerobj, encoded_header, encoded_signature)
 
         headerobj = dict(alg='RS256')
@@ -290,7 +290,7 @@ class TestJWS(unittest.TestCase):
             'N_IoypGlUPQGe77Rw')
 
     def test_decode(self):
-        from jwt.jws import MalformedJWS
+        from jwt.jws import MalformedJWT
 
         inst = self.target(self.keys)
 
@@ -299,7 +299,7 @@ class TestJWS(unittest.TestCase):
         encoded_payload = 'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQog' +\
                           'Imh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ'
 
-        with self.assertRaises(MalformedJWS):
+        with self.assertRaises(MalformedJWT):
             inst.decode({'alg': 'none'}, encoded_payload)
 
         headerobj = dict(alg='HS256', typ='JWT')

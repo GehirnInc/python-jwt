@@ -2,16 +2,11 @@
 
 import json
 
-from . import utils
-
-
-InvalidJWT = type('InvalidJWT', (ValueError, ), {})
-
-
-MalformedJWT = type('InvalidJWT', (ValueError, ), {})
-
-
-NotSupported = type('InvalidJWT', (ValueError, ), {})
+from jwt import utils
+from jwt.exceptions import (
+    MalformedJWT,
+    UnsupportedAlgorithm,
+)
 
 
 class Impl:
@@ -58,7 +53,7 @@ class JWT(Impl):
         elif self.jwe and self.jwe.is_supported(alg, enc):
             return self.jwe
 
-        raise NotSupported(alg, enc)
+        raise UnsupportedAlgorithm(alg, enc)
 
     def _is_nested_jwt(self, header):
         return 'cty' in header and header['cty'] == 'JWT'
@@ -73,12 +68,12 @@ class JWT(Impl):
         except (ValueError, UnicodeDecodeError) as why:
             raise MalformedJWT() from why
         except KeyError as why:
-            raise InvalidJWT('\'alg\' is required') from why
+            raise MalformedJWT('\'alg\' is required') from why
         else:
             if impl.verify(headerobj, header, rest):
                 return impl, headerobj, rest
 
-            raise InvalidJWT()
+            raise MalformedJWT()
 
     def encode(self, headerobj, payload):
         assert isinstance(headerobj, dict)
@@ -87,7 +82,7 @@ class JWT(Impl):
         try:
             impl = self._get_impl(headerobj['alg'], headerobj.get('enc'))
         except KeyError as why:
-            raise InvalidJWT('\'alg\' is required') from why
+            raise MalformedJWT('\'alg\' is required') from why
         else:
             encoded_header =\
                 self._b64_encode(self._json_encode(headerobj).encode('utf8'))
