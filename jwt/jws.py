@@ -51,7 +51,7 @@ class JWS(Impl):
         else:
             raise KeyNotFound()
 
-        return self.keys.retrive(kty, kid, needs_private)
+        return self.keys.retrieve(kty, kid, needs_private)
 
     def sign(self, alg, message, kid=None):
         assert isinstance(message, bytes)

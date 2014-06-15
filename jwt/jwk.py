@@ -195,7 +195,7 @@ class JWKSet(list):
 
         return inst
 
-    def retrive(self, kty, kid=None, needs_private=False):
+    def retrieve(self, kty, kid=None, needs_private=False):
         keys = []
         for key in self:
             if key.kty != kty:
