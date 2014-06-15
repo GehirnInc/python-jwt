@@ -24,7 +24,7 @@ license = _read("LICENSE.rst")
 
 setup(
     name='jwt',
-    version='0.2.1',
+    version='0.2.2',
     test_suite='jwt',
     author='Kohei YOSHIDA',
     author_email='kohei.yoshida@gehirn.co.jp',
