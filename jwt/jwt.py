@@ -3,6 +3,7 @@
 import json
 
 from jwt.exceptions import (
+    KeyNotFound,
     MalformedJWT,
     UnsupportedAlgorithm,
 )
@@ -29,6 +30,16 @@ class JWT(Impl):
             return self.jwe
 
         raise UnsupportedAlgorithm(alg)
+
+    def sign(self, alg, message, key=None, kid=None):
+        if key:
+            keys = [key]
+        elif kid:
+            keys = self.jws.get_keys(alg, kid, True)
+        else:
+            raise KeyNotFound()
+
+        return self.jws.sign(alg, message, keys)
 
     def verify(self, jwt):
         assert isinstance(jwt, str)
