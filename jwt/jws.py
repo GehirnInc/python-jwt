@@ -53,14 +53,18 @@ class JWS(Impl):
 
         return self.keys.retrieve(kty, kid, needs_private)
 
-    def sign(self, alg, message, kid=None):
+    def sign(self, alg, message, keys):
         assert isinstance(message, bytes)
+
         signer = self.get_signer(alg)
 
         if alg == 'none':
             return signer.sign(None, message)
 
-        for key in self.get_keys(alg, kid, True):
+        if not isinstance(keys, list):
+            keys = [keys]
+
+        for key in keys:
             try:
                 return signer.sign(key.keyobj, message)
             except BaseException:
@@ -99,10 +103,16 @@ class JWS(Impl):
         assert isinstance(encoded_header, str)
         assert isinstance(payload, bytes)
 
+        if headerobj['alg'] == 'none':
+            keys = None
+        else:
+            keys = self.get_keys(headerobj['alg'], headerobj.get('kid'), True)
+
         encoded_payload = b64_encode(payload)
         encoded_signature = b64_encode(self.sign(
             headerobj['alg'],
-            self._signing_message(encoded_header, encoded_payload)))
+            self._signing_message(encoded_header, encoded_payload),
+            keys))
 
         return '.'.join((encoded_payload, encoded_signature))
 
