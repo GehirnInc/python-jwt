@@ -181,7 +181,14 @@ class JWKSet(list):
         if not isinstance(value, JWK):
             raise ValueError()
 
-        return super(JWKSet, self).append(value)
+        try:
+            self.get(value.kty, value.kid)
+        except KeyNotFound:
+            return super(JWKSet, self).append(value)
+        else:
+            raise ValueError('Key which is kty={kty} and kid={kid}'
+                             'is already appended'.format(kty=value.kty,
+                                                          kid=value.kid))
 
     def to_dict(self):
         return dict(keys=[jwk.to_dict() for jwk in self])
@@ -195,8 +202,7 @@ class JWKSet(list):
 
         return inst
 
-    def retrieve(self, kty, kid=None, needs_private=False):
-        keys = []
+    def get(self, kty, kid=None, needs_private=False):
         for key in self:
             if key.kty != kty:
                 continue
@@ -207,9 +213,6 @@ class JWKSet(list):
             if kty == 'RSA' and needs_private and not key.keyobj.has_private():
                 continue
 
-            keys.append(key)
+            return key
 
-        if len(keys) < 1:
-            raise KeyNotFound()
-
-        return keys
+        raise KeyNotFound()

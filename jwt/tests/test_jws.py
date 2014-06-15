@@ -188,28 +188,28 @@ class TestJWS(unittest.TestCase):
         with self.assertRaises(UnsupportedAlgorithm):
             inst.get_signer('unknownalg')
 
-    def test_get_keys(self):
+    def test_get_key(self):
         inst = self.target(self.keys)
 
         from jwt.jws import KeyNotFound
 
         with self.assertRaises(KeyNotFound):
-            inst.get_keys('unknownalg')
+            inst.get_key('unknownalg')
 
     def test_sign(self):
         inst = self.target(self.keys)
 
         self.assertEqual(
-            inst.sign('none', b'This message will be signed'),
+            inst.sign('none', b'This message will be signed', None),
             b'')
 
         self.assertEqual(
-            inst.sign('HS256', b'This message will be signed'),
+            inst.sign('HS256', b'This message will be signed', None),
             b'\xab\x9e\x1a\xb0\xaf\x99<\xf3\x07hS\xfc\x83h3\xa6\x95\x90\xbb'
             b'\x9e]Xa\xcagl\x1e\xbf\xc4\xb7Y\x0c')
 
         self.assertEqual(
-            inst.sign('RS256', b'This message will be signed'),
+            inst.sign('RS256', b'This message will be signed', None),
             b'\x87\xf8\x17\xd2\x07\xd1\t\xdf=4\xf8)\x98K\xfd0(\xa9\xd7\xa7\x06'
             b'\x19\xdf\x0cK\xfb\rL\xbf>\x04C\xca\x8c\xec\xf7V\xf36]\x82\xdeDq0'
             b'\xbeN(\xed}\x10J\xe6\xb3\xaa\xa7\x870\xc3\t\x05\x7f\x98i\xec\x1c'

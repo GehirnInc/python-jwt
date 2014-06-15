@@ -43,7 +43,7 @@ class JWS(Impl):
         except KeyError as why:
             raise UnsupportedAlgorithm(alg) from why
 
-    def get_keys(self, alg, kid=None, needs_private=False):
+    def get_key(self, alg, kid=None, needs_private=False):
         if alg.startswith('HS'):
             kty = 'oct'
         elif alg.startswith('RS'):
@@ -51,26 +51,17 @@ class JWS(Impl):
         else:
             raise KeyNotFound()
 
-        return self.keys.retrieve(kty, kid, needs_private)
+        return self.keys.get(kty, kid, needs_private)
 
-    def sign(self, alg, message, keys):
+    def sign(self, alg, message, kid):
         assert isinstance(message, bytes)
 
         signer = self.get_signer(alg)
-
         if alg == 'none':
             return signer.sign(None, message)
 
-        if not isinstance(keys, list):
-            keys = [keys]
-
-        for key in keys:
-            try:
-                return signer.sign(key.keyobj, message)
-            except BaseException:
-                continue
-
-        raise KeyNotFound()
+        key = self.get_key(alg, kid, True)
+        return signer.sign(key.keyobj, message)
 
     def _signing_message(self, encoded_header, encoded_payload):
         return '.'.join((encoded_header, encoded_payload)).encode('ascii')
@@ -92,27 +83,19 @@ class JWS(Impl):
             if headerobj['alg'] == 'none':
                 return signer.verify(None, msg, signature)
 
-            for key in self.get_keys(headerobj['alg'], headerobj.get('kid')):
-                if signer.verify(key.keyobj, msg, signature):
-                    return True
-
-            return False
+            key = self.get_key(headerobj['alg'], headerobj.get('kid'))
+            return signer.verify(key.keyobj, msg, signature)
 
     def encode(self, headerobj, encoded_header, payload):
         assert isinstance(headerobj, dict)
         assert isinstance(encoded_header, str)
         assert isinstance(payload, bytes)
 
-        if headerobj['alg'] == 'none':
-            keys = None
-        else:
-            keys = self.get_keys(headerobj['alg'], headerobj.get('kid'), True)
-
         encoded_payload = b64_encode(payload)
         encoded_signature = b64_encode(self.sign(
             headerobj['alg'],
             self._signing_message(encoded_header, encoded_payload),
-            keys))
+            headerobj.get('kid')))
 
         return '.'.join((encoded_payload, encoded_signature))
 
