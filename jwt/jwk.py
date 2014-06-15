@@ -216,3 +216,14 @@ class JWKSet(list):
             return key
 
         raise KeyNotFound()
+
+    def copy(self):
+        inst = JWKSet()
+        inst.extend(self)
+        return inst
+
+    def extend(self, L):
+        assert isinstance(L, self.__class__)
+
+        for key in L:
+            self.append(key)
