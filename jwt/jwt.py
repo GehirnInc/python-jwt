@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import json
 
 from jwt.exceptions import (
@@ -37,7 +38,7 @@ class JWT(Impl):
     def verify(self, jwt):
         assert isinstance(jwt, str)
 
-        encoded_header, rest = jwt.split('.', maxsplit=1)
+        encoded_header, rest = jwt.split('.', 1)
         headerobj = json.loads(b64_decode(encoded_header).decode('utf8'))
         impl = self._get_impl(headerobj['alg'])
 
@@ -53,7 +54,7 @@ class JWT(Impl):
         try:
             impl = self._get_impl(headerobj['alg'])
         except KeyError as why:
-            raise MalformedJWT('\'alg\' is required') from why
+            raise MalformedJWT('\'alg\' is required')
 
         encoded_header = b64_encode(self._json_encode(headerobj))
 
@@ -65,7 +66,7 @@ class JWT(Impl):
     def decode(self, jwt):
         assert isinstance(jwt, str)
 
-        encoded_header, rest = jwt.split('.', maxsplit=1)
+        encoded_header, rest = jwt.split('.', 1)
         headerobj = json.loads(b64_decode(encoded_header).decode('utf8'))
         impl = self._get_impl(headerobj['alg'])
 

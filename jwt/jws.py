@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import hashlib
 import hmac
 from collections import namedtuple
@@ -41,7 +43,7 @@ class JWS(Impl):
         try:
             return self.REGISTRY[alg]
         except KeyError as why:
-            raise UnsupportedAlgorithm(alg) from why
+            raise UnsupportedAlgorithm(alg)
 
     def get_key(self, alg, kid=None, needs_private=False):
         if alg.startswith('HS'):
@@ -75,7 +77,7 @@ class JWS(Impl):
             encoded_payload, encoded_signature = rest.split('.')
             signature = b64_decode(encoded_signature)
         except ValueError as why:
-            raise MalformedJWT() from why
+            raise MalformedJWT()
         else:
             msg = self._signing_message(encoded_header, encoded_payload)
 
@@ -107,7 +109,7 @@ class JWS(Impl):
             encoded_payload, _ = rest.split('.')
             return b64_decode(encoded_payload)
         except ValueError as why:
-            raise MalformedJWT() from why
+            raise MalformedJWT()
 
     @classmethod
     def register(cls, alg):

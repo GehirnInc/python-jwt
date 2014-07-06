@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 from Crypto.PublicKey import RSA
 
 from jwt.exceptions import (
