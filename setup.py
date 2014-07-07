@@ -5,7 +5,9 @@ import os
 from setuptools import setup, find_packages
 
 here = os.path.dirname(__file__)
-requires = []
+requires = [
+    'PyCrypto',
+]
 tests_require = [
     'nose',
     'coverage'
@@ -22,7 +24,7 @@ license = _read("LICENSE.rst")
 
 setup(
     name='jwt',
-    version='0.1.1',
+    version='0.2.3',
     test_suite='jwt',
     author='Kohei YOSHIDA',
     author_email='kohei.yoshida@gehirn.co.jp',
