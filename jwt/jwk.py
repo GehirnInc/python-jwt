@@ -171,9 +171,9 @@ class RSAKey(Impl):
     @property
     def keyobj(self):
         if self.d:
-            return RSA.construct((self.n, self.e, self.d))
+            return RSA.construct((long(self.n), long(self.e), long(self.d)))
 
-        return RSA.construct((self.n, self.e))
+        return RSA.construct((long(self.n), long(self.e)))
 
 
 class JWKSet(list):

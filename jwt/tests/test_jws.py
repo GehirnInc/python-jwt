@@ -51,14 +51,14 @@ class TestSigners(unittest.TestCase):
 
     def test_plaintext_jwt(self):
         from jwt.jws import plaintext_jwt
-        self.assertEqual(plaintext_jwt.sign(None, b'test'), b'')
+        self.assertEqual(plaintext_jwt[0](None, b'test'), b'')
 
     def verify_hmac_signature(self, signer, hash_func):
         import hmac
         message = b'This message will be signed'
 
         expected = hmac.new(self.oct_key, message, hash_func).digest()
-        assert signer.sign(self.oct_key, message) == expected
+        assert signer[0](self.oct_key, message) == expected
 
     def test_hmac_signer(self):
         from jwt.jws import (
@@ -93,9 +93,9 @@ class TestSigners(unittest.TestCase):
 
         verifier = PKCS1_v1_5.new(self.rsa_key.publickey())
         assert verifier.verify(hash_func.new(message),
-                               signer.sign(self.rsa_key, message))
-        assert signer.verify(self.rsa_key, message,
-                             signer.sign(self.rsa_key, message))
+                               signer[0](self.rsa_key, message))
+        assert signer[1](self.rsa_key, message,
+                         signer[0](self.rsa_key, message))
 
     def test_rsa_signer(self):
         from Crypto.Hash import SHA256

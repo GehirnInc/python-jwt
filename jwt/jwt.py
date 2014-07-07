@@ -36,8 +36,6 @@ class JWT(Impl):
         return self.jws.sign(alg, message, kid)
 
     def verify(self, jwt):
-        assert isinstance(jwt, str)
-
         encoded_header, rest = jwt.split('.', 1)
         headerobj = json.loads(b64_decode(encoded_header).decode('utf8'))
         impl = self._get_impl(headerobj['alg'])
@@ -64,8 +62,6 @@ class JWT(Impl):
         ))
 
     def decode(self, jwt):
-        assert isinstance(jwt, str)
-
         encoded_header, rest = jwt.split('.', 1)
         headerobj = json.loads(b64_decode(encoded_header).decode('utf8'))
         impl = self._get_impl(headerobj['alg'])
