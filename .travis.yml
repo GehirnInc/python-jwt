@@ -13,4 +13,4 @@ after_success:
     - if test "$TOXENV" = coverage; then coveralls; fi
 notifications:
     slack:
-        - gehirn:xxuGA4N6aUYhTmKJYdM15ieu
+        - secure: NdVJltk6cQOjZHD0/8qzbdjRWYXgNhAkmoMuG8u0Y//9T7XY+BtNpOIDjInhU4/LZAP+kCl2uZuDo7ueU50+J+PKL1t7BhwWwn2al8S93M3KsiHvN8CrQkheQ2gpOTV70CaGO1sS1eokdVr7/ss557WIhkkFfZPv0hWkA+bhAiY=
