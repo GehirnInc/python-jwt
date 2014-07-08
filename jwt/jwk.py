@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+import sys
+
 from Crypto.PublicKey import RSA
 
 from jwt.exceptions import (
@@ -15,6 +18,9 @@ from jwt.utils import (
 
 
 __all__ = ['JWK']
+
+if sys.version_info[0] >= 3:
+    long = lambda i: i
 
 
 class JWK:
@@ -170,9 +176,9 @@ class RSAKey(Impl):
     @property
     def keyobj(self):
         if self.d:
-            return RSA.construct((self.n, self.e, self.d))
+            return RSA.construct((long(self.n), long(self.e), long(self.d)))
 
-        return RSA.construct((self.n, self.e))
+        return RSA.construct((long(self.n), long(self.e)))
 
 
 class JWKSet(list):
