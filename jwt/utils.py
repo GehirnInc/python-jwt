@@ -5,20 +5,23 @@ import base64
 
 
 def b64_encode(source):
-    source = str(source)
+    if not isinstance(source, bytes):
+        source = source.encode('ascii')
 
-    return base64.urlsafe_b64encode(source).replace(b'=', b'')
+    encoded = base64.urlsafe_b64encode(source).replace(b'=', b'')
+    return str(encoded.decode('ascii'))
 
 
 def b64_decode(source):
-    source = str(source)
+    if not isinstance(source, bytes):
+        source = source.encode('ascii')
 
     source += b'=' * (4 - (len(source) % 4))
     return base64.urlsafe_b64decode(source)
 
 
 def base64_to_int(source):
-    if isinstance(source, str):
+    if not isinstance(source, bytes):
         source = source.encode('ascii')
 
     result = 0

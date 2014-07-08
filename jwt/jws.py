@@ -60,16 +60,18 @@ class JWS(Impl):
 
         signer = self.get_signer(alg)
         if alg == 'none':
-            return signer[0](None, message)
+            return signer.sign(None, message)
 
         key = self.get_key(alg, kid, True)
-        return signer[0](key.keyobj, message)
+        return signer.sign(key.keyobj, message)
 
     def _signing_message(self, encoded_header, encoded_payload):
         return '.'.join((encoded_header, encoded_payload)).encode('ascii')
 
     def verify(self, headerobj, encoded_header, rest):
         assert isinstance(headerobj, dict)
+        assert isinstance(encoded_header, str)
+        assert isinstance(rest, str)
 
         try:
             encoded_payload, encoded_signature = rest.split('.')
@@ -81,13 +83,15 @@ class JWS(Impl):
 
             signer = self.get_signer(headerobj['alg'])
             if headerobj['alg'] == 'none':
-                return signer[1](None, msg, signature)
+                return signer.verify(None, msg, signature)
 
             key = self.get_key(headerobj['alg'], headerobj.get('kid'))
-            return signer[1](key.keyobj, msg, signature)
+            return signer.verify(key.keyobj, msg, signature)
 
     def encode(self, headerobj, encoded_header, payload):
         assert isinstance(headerobj, dict)
+        assert isinstance(encoded_header, str)
+        assert isinstance(payload, bytes)
 
         encoded_payload = b64_encode(payload)
         encoded_signature = b64_encode(self.sign(
@@ -99,6 +103,7 @@ class JWS(Impl):
 
     def decode(self, headerobj, rest):
         assert isinstance(headerobj, dict)
+        assert isinstance(rest, str)
 
         try:
             encoded_payload, _ = rest.split('.')
@@ -109,9 +114,9 @@ class JWS(Impl):
     @classmethod
     def register(cls, alg):
         def receiver(func):
-            function_pair = func()
-            cls.REGISTRY[alg] = function_pair
-            return function_pair
+            signer = namedtuple(alg, ['sign', 'verify'])(*func())
+            cls.REGISTRY[alg] = signer
+            return signer
         return receiver
 
 
