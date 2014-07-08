@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import sys
+
 from Crypto.PublicKey import RSA
 
 from jwt.exceptions import (
@@ -16,6 +18,9 @@ from jwt.utils import (
 
 
 __all__ = ['JWK']
+
+if sys.version_info[0] >= 3:
+    long = lambda i: i
 
 
 class JWK:

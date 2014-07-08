@@ -2,6 +2,10 @@
 
 from __future__ import absolute_import
 import base64
+import sys
+
+if sys.version_info[0] == 3:
+    ord = lambda i: i
 
 
 def b64_encode(source):
@@ -35,6 +39,6 @@ def int_to_base64(source):
     result_reversed = []
     while source:
         source, remainder = divmod(source, 256)
-        result_reversed.append(chr(remainder))
+        result_reversed.append(remainder)
 
-    return b64_encode(''.join(reversed(result_reversed)))
+    return b64_encode(bytes(bytearray(reversed(result_reversed))))
