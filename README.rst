@@ -5,7 +5,7 @@ python-jwt
 -----
 About
 -----
-This is a JSON Web Token library for Python 3 developed at `Gehirn Inc`_.
+This is a JSON Web Token library for Python developed at `Gehirn Inc`_.
 
 -------
 Install

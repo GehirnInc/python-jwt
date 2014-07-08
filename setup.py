@@ -24,7 +24,7 @@ license = _read("LICENSE.rst")
 
 setup(
     name='jwt',
-    version='0.2.3',
+    version='0.3.1',
     test_suite='jwt',
     author='Kohei YOSHIDA',
     author_email='kohei.yoshida@gehirn.co.jp',
@@ -41,6 +41,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Topic :: Internet :: WWW/HTTP",
