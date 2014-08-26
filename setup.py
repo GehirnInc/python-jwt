@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 here = os.path.dirname(__file__)
 requires = [
-    'PyCrypto',
+    'PyCrypto==2.6.1',
 ]
 tests_require = [
     'nose',
