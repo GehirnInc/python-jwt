@@ -1,235 +1,248 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright 2017 Gehirn Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-from __future__ import absolute_import
-import sys
+import hmac
+from typing import Callable
 
-from Crypto.PublicKey import RSA
-
-from jwt.exceptions import (
-    KeyNotFound,
-    UnsupportedKeyType,
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import (
+    rsa_crt_dmp1,
+    rsa_crt_dmq1,
+    rsa_crt_iqmp,
+    rsa_recover_prime_factors,
+    RSAPrivateKey,
+    RSAPrivateNumbers,
+    RSAPublicNumbers,
 )
-from jwt.utils import (
-    b64_decode,
-    b64_encode,
-    base64_to_int,
-    int_to_base64,
+
+from .exceptions import (
+    MalformedJWKError,
+    UnsupportedKeyTypeError,
+)
+from .utils import (
+    b64encode,
+    b64decode,
+    uint_b64encode,
+    uint_b64decode,
 )
 
 
-__all__ = ['JWK']
+class AbstractJWKBase:
 
-if sys.version_info[0] >= 3:
-    long = lambda i: i
+    def get_kty(self):
+        raise NotImplementedError()
 
+    def get_kid(self):
+        raise NotImplementedError()
 
-class JWK:
+    def is_sign_key(self) -> bool:
+        raise NotImplementedError()
 
-    REGISTRY = {}
+    def sign(self, message: bytes, **options) -> bytes:
+        raise NotImplementedError()
 
-    def __init__(self, impl):
-        self.impl = impl
+    def verify(self, message: bytes, signature: bytes, **options) -> bool:
+        raise NotImplementedError()
 
-    @property
-    def kty(self):
-        return self.impl.kty
-
-    @property
-    def kid(self):
-        return self.impl.kid
-
-    @property
-    def keyobj(self):
-        return self.impl.keyobj
-
-    def to_dict(self):
-        return self.impl.to_dict()
+    def to_dict(self, public_only=True):
+        raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, jwk):
-        jwk = jwk.copy()
-        try:
-            impl = cls.REGISTRY[jwk['kty']]
-        except KeyError:
-            raise UnsupportedKeyType()
-        else:
-            del jwk['kty']
-
-            return cls(impl.from_dict(jwk))
-
-    @classmethod
-    def register(cls, kty):
-        def recv(impl):
-            assert issubclass(impl, Impl)
-
-            cls.REGISTRY[kty] = impl
-            return impl
-
-        return recv
+    def from_dict(cls, dct):
+        raise NotImplementedError()
 
 
-class Impl(dict):
+class OctetJWK(AbstractJWKBase):
 
-    def __init__(self, kty, params):
-        self.kty = kty
-        self.kid = params.get('kid')
-        if 'kid' in params:
-            del params['kid']
-        self.update(params)
+    def __init__(self, key: bytes, kid=None, **options):
+        super(AbstractJWKBase, self).__init__()
+        self.key = key
+        self.kid = kid
 
-    def update(self, D):
-        if len(set(D.keys()) & {'kty', 'kid'}) > 0:
-            raise KeyError()
+        optnames = {'use', 'key_ops', 'alg', 'x5u', 'x5c', 'x5t', 'x5t#s256'}
+        self.options = {k: v for k, v in options.items() if k in optnames}
 
-        return super(Impl, self).update(D)
+    def get_kty(self):
+        return 'oct'
 
-    def to_dict(self):
-        D = self.copy()
-        D['kty'] = self.kty
+    def get_kid(self):
+        return self.kid
+
+    def is_sign_key(self) -> bool:
+        return True
+
+    def sign(self, message: bytes,
+             signer: Callable[[bytes, bytes], bytes]) -> bytes:
+        return signer(message, self.key)
+
+    def verify(self, message: bytes, signature: bytes,
+               signer: Callable[[bytes, bytes], bytes]) -> bool:
+        return hmac.compare_digest(signature, signer(message, self.key))
+
+    def to_dict(self, public_only=True):
+        dct = {
+            'kty': 'oct',
+            'k': b64encode(self.key),
+        }
+        dct.update(self.options)
         if self.kid:
-            D['kid'] = self.kid
-
-        return D
-
-    @classmethod
-    def from_dict(cls, D):
-        D = D.copy()
-        return cls(**D)
-
-    @property
-    def keyobj(self):
-        raise NotImplementedError
-
-
-@JWK.register('oct')
-class OctKey(Impl):
-
-    def __init__(self, k, **kwargs):
-        self.k = k
-
-        super(OctKey, self).__init__('oct', kwargs)
-
-    def update(self, D):
-        if 'k' in D:
-            raise KeyError()
-
-        return super(OctKey, self).update(D)
-
-    def to_dict(self):
-        D = super(OctKey, self).to_dict()
-        D['k'] = b64_encode(self.k)
-
-        return D
+            dct['kid'] = self.kid
+        return dct
 
     @classmethod
-    def from_dict(cls, D):
-        D = D.copy()
-
-        if 'k' in D:
-            D['k'] = b64_decode(D['k'])
-
-        return super(OctKey, cls).from_dict(D)
-
-    @property
-    def keyobj(self):
-        return self.k
+    def from_dict(cls, dct):
+        try:
+            return cls(b64decode(dct['k']), **dct)
+        except KeyError as why:
+            raise MalformedJWKError('k is required')
 
 
-@JWK.register('RSA')
-class RSAKey(Impl):
+class RSAJWK(AbstractJWKBase):
+    """
+    https://tools.ietf.org/html/rfc7518.html#section-6.3.1
+    """
 
-    def __init__(self, n, e, d=0, **kwargs):
-        self.n = n
-        self.e = e
+    def __init__(self, keyobj: object, **options):
+        super(AbstractJWKBase, self).__init__()
+        self.keyobj = keyobj
 
-        self.d = d
+        optnames = {'use', 'key_ops', 'alg', 'kid',
+                    'x5u', 'x5c', 'x5t', 'x5t#s256'}
+        self.options = {k: v for k, v in options.items() if k in optnames}
 
-        super(RSAKey, self).__init__('RSA', kwargs)
+    def is_sign_key(self) -> bool:
+        return isinstance(self.keyobj, RSAPrivateKey)
 
-    def update(self, D):
-        if len(set(D.keys()) & {'n', 'e', 'd'}) > 0:
-            raise KeyError()
+    def sign(self, message: bytes, hash_fun: object = None) -> bytes:
+        signer = self.keyobj.signer(padding.PKCS1_v1_5(), hash_fun())
+        signer.update(message)
+        return signer.finalize()
 
-        return super(RSAKey, self).update(D)
+    def verify(self, message: bytes, signature: bytes,
+               hash_fun: object = None) -> bool:
+        verifier = self.keyobj.verifier(
+            signature, padding.PKCS1_v1_5(), hash_fun())
+        verifier.update(message)
+        try:
+            verifier.verify()
+            return True
+        except:
+            return False
 
-    def to_dict(self):
-        D = super(RSAKey, self).to_dict()
-        D['n'] = int_to_base64(self.n)
-        D['e'] = int_to_base64(self.e)
+    def get_kty(self):
+        return 'RSA'
 
-        if self.d:
-            D['d'] = int_to_base64(self.d)
+    def get_kid(self):
+        return self.options.get('kid')
 
-        return D
+    def to_dict(self, public_only=True):
+        dct = {
+            'kty': 'RSA',
+        }
+        dct.update(self.options)
+
+        if isinstance(self.keyobj, RSAPrivateKey):
+            priv_numbers = self.keyobj.private_numbers()
+            pub_numbers = priv_numbers.public_numbers
+            dct.update({
+                'e': uint_b64encode(pub_numbers.e),
+                'n': uint_b64encode(pub_numbers.n),
+            })
+            if not public_only:
+                dct.update({
+                    'e': uint_b64encode(pub_numbers.e),
+                    'n': uint_b64encode(pub_numbers.n),
+                    'd': uint_b64encode(priv_numbers.d),
+                    'p': uint_b64encode(priv_numbers.p),
+                    'q': uint_b64encode(priv_numbers.q),
+                    'dp': uint_b64encode(priv_numbers.dmp1),
+                    'dq': uint_b64encode(priv_numbers.dmq1),
+                    'qi': uint_b64encode(priv_numbers.iqmp),
+                })
+            return dct
+        pub_numbers = self.keyobj.public_numbers()
+        dct.update({
+            'e': uint_b64encode(pub_numbers.e),
+            'n': uint_b64encode(pub_numbers.n),
+        })
+        return dct
 
     @classmethod
-    def from_dict(cls, D):
-        D = D.copy()
-        for name in {'n', 'e', 'd'}:
-            if name not in D:
-                continue
-
-            D[name] = base64_to_int(D[name])
-
-        return super(RSAKey, cls).from_dict(D)
-
-    @property
-    def keyobj(self):
-        if self.d:
-            return RSA.construct((long(self.n), long(self.e), long(self.d)))
-
-        return RSA.construct((long(self.n), long(self.e)))
-
-
-class JWKSet(list):
-
-    def append(self, value):
-        if not isinstance(value, JWK):
-            raise ValueError()
+    def from_dict(cls, dct):
+        if 'oth' in dct:
+            raise UnsupportedKeyTypeError(
+                'RSA keys with multiples primes are not supported')
 
         try:
-            self.get(value.kty, value.kid)
-        except KeyNotFound:
-            return super(JWKSet, self).append(value)
+            e = uint_b64decode(dct['e'])
+            n = uint_b64decode(dct['n'])
+        except KeyError as why:
+            raise MalformedJWKError('e and n are required')
+        pub_numbers = RSAPublicNumbers(e, n)
+        if 'd' not in dct:
+            return cls(
+                pub_numbers.public_key(backend=default_backend()), **dct)
+        d = uint_b64decode(dct['d'])
+
+        privparams = {'p', 'q', 'dp', 'dq', 'qi'}
+        product = set(dct.keys()) & privparams
+        if len(product) == 0:
+            p, q = rsa_recover_prime_factors(n, e, d)
+            priv_numbers = RSAPrivateNumbers(
+                d=d,
+                p=p,
+                q=q,
+                dmp1=rsa_crt_dmp1(d, p),
+                dmq1=rsa_crt_dmq1(d, q),
+                iqmp=rsa_crt_iqmp(p, q),
+                public_numbers=pub_numbers)
+        elif product == privparams:
+            priv_numbers = RSAPrivateNumbers(
+                d=d,
+                p=uint_b64decode(dct['p']),
+                q=uint_b64decode(dct['q']),
+                dmp1=uint_b64decode(dct['dp']),
+                dmq1=uint_b64decode(dct['dq']),
+                iqmp=uint_b64decode(dct['qi']),
+                public_numbers=pub_numbers)
         else:
-            raise ValueError('Key which is kty={kty} and kid={kid}'
-                             'is already appended'.format(kty=value.kty,
-                                                          kid=value.kid))
+            # If the producer includes any of the other private key parameters,
+            # then all of the others MUST be present, with the exception of
+            # "oth", which MUST only be present when more than two prime
+            # factors were used.
+            raise MalformedJWKError(
+                'p, q, dp, dq, qi MUST be present or'
+                'all of them MUST be absent')
+        return cls(priv_numbers.private_key(backend=default_backend()), **dct)
 
-    def to_dict(self):
-        return dict(keys=[jwk.to_dict() for jwk in self])
 
-    @classmethod
-    def from_dict(cls, D):
-        inst = cls()
+def supported_key_types():
+    return {
+        'oct': OctetJWK,
+        'RSA': RSAJWK,
+       }
 
-        for jwk in D['keys']:
-            inst.append(JWK.from_dict(jwk))
 
-        return inst
+def jwk_from_dict(dct):
+    if 'kty' not in dct:
+        raise MalformedJWKError('kty MUST be present')
 
-    def get(self, kty, kid=None, needs_private=False):
-        for key in self:
-            if key.kty != kty:
-                continue
-
-            if kid and key.kid != kid:
-                continue
-
-            if kty == 'RSA' and needs_private and not key.keyobj.has_private():
-                continue
-
-            return key
-
-        raise KeyNotFound()
-
-    def copy(self):
-        inst = JWKSet()
-        inst.extend(self)
-        return inst
-
-    def extend(self, L):
-        assert isinstance(L, self.__class__)
-
-        for key in L:
-            self.append(key)
+    supported = supported_key_types()
+    kty = dct['kty']
+    if kty not in supported:
+        raise UnsupportedKeyTypeError('unsupported key type: {}'.format(kty))
+    return supported[kty].from_dict(dct)

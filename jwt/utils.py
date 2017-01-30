@@ -1,44 +1,53 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright 2017 Gehirn Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-from __future__ import absolute_import
-import base64
-import sys
-
-if sys.version_info[0] == 3:
-    ord = lambda i: i
-
-
-def b64_encode(source):
-    if not isinstance(source, bytes):
-        source = source.encode('ascii')
-
-    encoded = base64.urlsafe_b64encode(source).replace(b'=', b'')
-    return str(encoded.decode('ascii'))
-
-
-def b64_decode(source):
-    if not isinstance(source, bytes):
-        source = source.encode('ascii')
-
-    source += b'=' * (4 - (len(source) % 4))
-    return base64.urlsafe_b64decode(source)
+from base64 import (
+    urlsafe_b64encode,
+    urlsafe_b64decode,
+)
 
 
-def base64_to_int(source):
-    if not isinstance(source, bytes):
-        source = source.encode('ascii')
-
-    result = 0
-    for b in b64_decode(source):
-        result = (result << 8) + ord(b)
-
-    return result
+def b64encode(s: bytes) -> str:
+    s_bin = urlsafe_b64encode(s)
+    s_bin = s_bin.replace(b'=', b'')
+    return s_bin.decode('ascii')
 
 
-def int_to_base64(source):
-    result_reversed = []
-    while source:
-        source, remainder = divmod(source, 256)
-        result_reversed.append(remainder)
+def b64decode(s: str) -> bytes:
+    s_bin = s.encode('ascii')
+    s_bin += b'=' * (4 - len(s_bin) % 4)
+    return urlsafe_b64decode(s_bin)
 
-    return b64_encode(bytes(bytearray(reversed(result_reversed))))
+
+def uint_b64encode(value: int) -> str:
+    length = 1
+    rem = value >> 8
+    while rem:
+        length += 1
+        rem >>= 8
+
+    uint_bin = value.to_bytes(length, 'big', signed=False)
+    return b64encode(uint_bin)
+
+
+def uint_b64decode(uint_b64: str) -> int:
+    uint_bin = b64decode(uint_b64)
+
+    value = 0
+    for b in uint_bin:
+        value <<= 8
+        value += int(b)
+    return value
