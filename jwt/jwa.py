@@ -16,6 +16,7 @@
 
 import hashlib
 import hmac
+from typing import Callable
 
 from cryptography.hazmat.primitives.hashes import (
     SHA256,
@@ -49,7 +50,7 @@ class NoneSigningAlgorithm(AbstractSigningAlgorithm):
 
 class HMACAlgorithm(AbstractSigningAlgorithm):
 
-    def __init__(self, hash_fun: object) -> None:
+    def __init__(self, hash_fun: Callable) -> None:
         self.hash_fun = hash_fun
 
     def _check_key(self, key: AbstractJWKBase) -> None:
@@ -68,7 +69,7 @@ class HMACAlgorithm(AbstractSigningAlgorithm):
     def verify(self, message: bytes, key: AbstractJWKBase,
                signature: bytes) -> bool:
         self._check_key(key)
-        return key.verify(message, signature, self._sign)
+        return key.verify(message, signature, signer=self._sign)
 
 
 HS256 = HMACAlgorithm(hashlib.sha256)

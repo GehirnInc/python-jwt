@@ -51,33 +51,33 @@ class JWS:
         header = {}
         header_b64 = b64encode(json.dumps(header).encode('ascii'))
         message_b64 = b64encode(message)
-        signing_message = header_b64 + b'.' + message_b64
+        signing_message = header_b64 + '.' + message_b64
 
-        signature = alg_impl.sign(signing_message, key)
+        signature = alg_impl.sign(signing_message.encode('ascii'), key)
         signature_b64 = b64encode(signature)
 
-        return signing_message + b'.' + signature_b64
+        return signing_message + '.' + signature_b64
 
-    def _decode_segments(self, message: bytes, key: AbstractJWKBase = None
-                         ) -> Tuple[dict, bytes, bytes, bytes]:
+    def _decode_segments(self, message: str) -> Tuple[dict, bytes, bytes, str]:
         try:
             signing_message, signature_b64 = message.rsplit('.', 1)
             header_b64, message_b64 = signing_message.split('.')
         except ValueError:
             raise JWSDecodeError('malformed JWS payload')
 
-        header = json.loads(b64decode(header_b64))
-        message = b64decode(message_b64)
-        signature = b64decode(message_b64)
-        return header, message, signature, signing_message
+        header = json.loads(b64decode(header_b64).decode('ascii'))
+        message_bin = b64decode(message_b64)
+        signature = b64decode(signature_b64)
+        return header, message_bin, signature, signing_message
 
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True) -> bytes:
-        header, message, signature, signing_message =\
-                self._decode_segments(message, key)
+        header, message_bin, signature, signing_message =\
+                self._decode_segments(message)
 
         alg_impl = self._retrieve_alg(header['alg'])
-        if do_verify and not alg_impl.verify(signing_message, key, signature):
+        if do_verify and not alg_impl.verify(
+                signing_message.encode('ascii'), key, signature):
             raise JWSDecodeError('JWS passed could not be validated')
 
-        return message
+        return message_bin

@@ -45,11 +45,11 @@ class JWT:
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True) -> dict:
         try:
-            message = self._jws.decode(message, key, do_verify)
+            message_bin = self._jws.decode(message, key, do_verify)
         except JWSDecodeError as why:
             raise JWTDecodeError('failed to decode JWT') from why
         try:
-            payload = json.loads(message.decode('utf-8'))
+            payload = json.loads(message_bin.decode('utf-8'))
             return payload
         except ValueError as why:
             raise JWTDecodeError(

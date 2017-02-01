@@ -21,12 +21,29 @@ class JWTException(Exception):
     """
 
 
-MalformedJWKError = type('MalformedJWKError', (JWTException, ), {})
-UnsupportedKeyTypeError = type('UnsupportedKeyTypeError', (JWTException, ), {})
+class MalformedJWKError(JWTException):
+    pass
 
-InvalidKeyTypeError = type('InvalidKeyTypeError', (JWTException, ), {})
 
-JWSEncodeError = type('JWSEncodeError', (JWTException, ), {})
-JWSDecodeError = type('JWSDecodeError', (JWTException, ), {})
-JWTEncodeError = type('JWTEncodeError', (JWTException, ), {})
-JWTDecodeError = type('JWTDecodeError', (JWTException, ), {})
+class UnsupportedKeyTypeError(JWTException):
+    pass
+
+
+class InvalidKeyTypeError(JWTException):
+    pass
+
+
+class JWSEncodeError(JWTException):
+    pass
+
+
+class JWSDecodeError(JWTException):
+    pass
+
+
+class JWTEncodeError(JWTException):
+    pass
+
+
+class JWTDecodeError(JWTException):
+    pass
