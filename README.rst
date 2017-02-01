@@ -63,25 +63,31 @@ Supported Algorithms
 
 - Unsecured
 
-   - none
+  - none
 
 - Symmetric
 
-   - HS256
-   - HS384
-   - HS512
+  - HS256
+
+  - HS384
+
+  - HS512
 
 - Asymmetric
 
-   - RS256
-   - RS384
-   - RS512
+  - RS256
+
+  - RS384
+
+  - RS512
 
 Supported Python Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Python 3.4
+
 - Python 3.5
+
 - Python 3.6
 
 
