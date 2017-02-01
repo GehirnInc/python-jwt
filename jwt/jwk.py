@@ -15,7 +15,10 @@
 # limitations under the License.
 
 import hmac
-from typing import Callable
+from typing import (
+    Callable,
+    Union,
+)
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -26,7 +29,12 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     rsa_recover_prime_factors,
     RSAPrivateKey,
     RSAPrivateNumbers,
+    RSAPublicKey,
     RSAPublicNumbers,
+)
+from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key,
+    load_pem_public_key,
 )
 
 from .exceptions import (
@@ -44,31 +52,31 @@ from .utils import (
 class AbstractJWKBase:
 
     def get_kty(self):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_kid(self):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def is_sign_key(self) -> bool:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def sign(self, message: bytes, **options) -> bytes:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def verify(self, message: bytes, signature: bytes, **options) -> bool:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def to_dict(self, public_only=True):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def from_dict(cls, dct):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
 
 class OctetJWK(AbstractJWKBase):
 
-    def __init__(self, key: bytes, kid=None, **options):
+    def __init__(self, key: bytes, kid=None, **options) -> None:
         super(AbstractJWKBase, self).__init__()
         self.key = key
         self.kid = kid
@@ -86,11 +94,13 @@ class OctetJWK(AbstractJWKBase):
         return True
 
     def sign(self, message: bytes,
-             signer: Callable[[bytes, bytes], bytes]) -> bytes:
+             signer: Callable[[bytes, bytes], bytes] = None,
+             **options) -> bytes:
         return signer(message, self.key)
 
     def verify(self, message: bytes, signature: bytes,
-               signer: Callable[[bytes, bytes], bytes]) -> bool:
+               signer: Callable[[bytes, bytes], bytes] = None,
+               **options) -> bool:
         return hmac.compare_digest(signature, signer(message, self.key))
 
     def to_dict(self, public_only=True):
@@ -116,7 +126,8 @@ class RSAJWK(AbstractJWKBase):
     https://tools.ietf.org/html/rfc7518.html#section-6.3.1
     """
 
-    def __init__(self, keyobj: object, **options):
+    def __init__(self, keyobj: Union[RSAPrivateKey, RSAPublicKey],
+                 **options) -> None:
         super(AbstractJWKBase, self).__init__()
         self.keyobj = keyobj
 
@@ -127,13 +138,14 @@ class RSAJWK(AbstractJWKBase):
     def is_sign_key(self) -> bool:
         return isinstance(self.keyobj, RSAPrivateKey)
 
-    def sign(self, message: bytes, hash_fun: object = None) -> bytes:
+    def sign(self, message: bytes, hash_fun: Callable = None,
+             **options) -> bytes:
         signer = self.keyobj.signer(padding.PKCS1_v1_5(), hash_fun())
         signer.update(message)
         return signer.finalize()
 
     def verify(self, message: bytes, signature: bytes,
-               hash_fun: object = None) -> bool:
+               hash_fun: Callable = None, **options) -> bool:
         verifier = self.keyobj.verifier(
             signature, padding.PKCS1_v1_5(), hash_fun())
         verifier.update(message)
@@ -246,3 +258,24 @@ def jwk_from_dict(dct):
     if kty not in supported:
         raise UnsupportedKeyTypeError('unsupported key type: {}'.format(kty))
     return supported[kty].from_dict(dct)
+
+
+def jwk_from_pem(pem_content: bytes) -> AbstractJWKBase:
+    try:
+        privkey = load_pem_private_key(
+            pem_content, password=None, backend=default_backend())
+        if isinstance(privkey, RSAPrivateKey):
+            return RSAJWK(privkey)
+        raise UnsupportedKeyTypeError(
+            'unsupported key type')  # pragma: no cover
+    except ValueError:
+        pass
+
+    try:
+        pubkey = load_pem_public_key(pem_content, backend=default_backend())
+        if isinstance(pubkey, RSAPublicKey):
+            return RSAJWK(pubkey)
+        raise UnsupportedKeyTypeError(
+            'unsupported key type')  # pragma: no cover
+    except ValueError as why:
+        raise UnsupportedKeyTypeError('could not deserialize PEM') from why

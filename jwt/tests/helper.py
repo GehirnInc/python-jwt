@@ -14,31 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .jwk import (
-    AbstractJWKBase,
-    jwk_from_dict,
-    jwk_from_pem,
-    supported_key_types,
-)
-from .jwkset import JWKSet
-from .jws import (
-    AbstractSigningAlgorithm,
-    supported_signing_algorithms,
-)
-from .jwt import JWT
+import os
 
 
-__all__ = [
-    # .jwk
-    'AbstractJWKBase',
-    'jwk_from_dict',
-    'jwk_from_pem',
-    'supported_key_types',
-    # .jwkset
-    'JWKSet',
-    # .jws
-    'AbstractSigningAlgorithm',
-    'supported_signing_algorithms',
-    # .jwt
-    'JWT',
-]
+here = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_testdata(name, mode='rb'):
+    abspath = os.path.normpath(os.path.join(here, 'testdata', name))
+    with open(abspath, mode=mode) as fh:
+        return fh.read()

@@ -1,0 +1,5 @@
+{
+    "kty": "oct",
+    "kid": "HMAC key used in JWS A.1 example",
+    "k": "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+}
