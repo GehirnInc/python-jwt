@@ -44,12 +44,15 @@ class JWS:
 
     def encode(self, message: bytes, key: AbstractJWKBase = None, alg='HS256',
                optional_headers: dict = None) -> str:
-        if alg not in self._supported_algs:
+        if alg not in self._supported_algs:  # pragma: no cover
             raise JWSEncodeError('unsupported algorithm: {}'.format(alg))
         alg_impl = self._retrieve_alg(alg)
 
-        header = {}
-        header_b64 = b64encode(json.dumps(header).encode('ascii'))
+        header = optional_headers and optional_headers.copy() or {}
+        header['alg'] = alg
+
+        header_b64 = b64encode(
+            json.dumps(header, separators=(',', ':')).encode('ascii'))
         message_b64 = b64encode(message)
         signing_message = header_b64 + '.' + message_b64
 

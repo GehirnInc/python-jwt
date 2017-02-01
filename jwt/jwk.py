@@ -140,14 +140,18 @@ class RSAJWK(AbstractJWKBase):
 
     def sign(self, message: bytes, hash_fun: Callable = None,
              **options) -> bytes:
-        signer = self.keyobj.signer(padding.PKCS1_v1_5(), hash_fun())
+        signer = self.keyobj.signer(padding.PKCS1v15(), hash_fun())
         signer.update(message)
         return signer.finalize()
 
     def verify(self, message: bytes, signature: bytes,
                hash_fun: Callable = None, **options) -> bool:
-        verifier = self.keyobj.verifier(
-            signature, padding.PKCS1_v1_5(), hash_fun())
+        if self.is_sign_key():
+            pubkey = self.keyobj.public_key()
+        else:
+            pubkey = self.keyobj
+        verifier = pubkey.verifier(
+            signature, padding.PKCS1v15(), hash_fun())
         verifier.update(message)
         try:
             verifier.verify()

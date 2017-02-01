@@ -37,6 +37,9 @@ class JWT:
             message = json.dumps(payload).encode('utf-8')
         except ValueError as why:
             raise JWTEncodeError('payload must be able to encode in JSON')
+
+        optional_headers = optional_headers and optional_headers.copy() or {}
+        optional_headers['typ'] = 'JWT'
         try:
             return self._jws.encode(message, key, alg, optional_headers)
         except JWSEncodeError as why:

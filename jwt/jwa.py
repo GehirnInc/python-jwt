@@ -31,21 +31,24 @@ from .jwk import AbstractJWKBase
 class AbstractSigningAlgorithm:
 
     def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def verify(self, message: bytes, key: AbstractJWKBase,
                signature: bytes) -> bool:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
 
-class NoneSigningAlgorithm(AbstractSigningAlgorithm):
+class NoneAlgorithm(AbstractSigningAlgorithm):
 
     def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
         return b''
 
     def verify(self, message: bytes, key: AbstractJWKBase,
                signature: bytes) -> bool:
-        return signature == b''
+        return hmac.compare_digest(signature, b'')
+
+
+none = NoneAlgorithm()
 
 
 class HMACAlgorithm(AbstractSigningAlgorithm):
@@ -108,7 +111,7 @@ RS512 = RSAAlgorithm(SHA512)
 
 def supported_signing_algorithms():
     return {
-        'none': NoneSigningAlgorithm(),
+        'none': none,
         'HS256': HS256,
         'HS384': HS384,
         'HS512': HS512,
