@@ -1,17 +1,13 @@
 language: python
-env:
-    matrix:
-        - TOXENV=py27
-        - TOXENV=py33
-        - TOXENV=py34
-        - TOXENV=coverage
+python:
+    - "3.4"
+    - "3.5"
+    - "3.6"
 install:
     - pip install tox
-    - if test "$TOXENV" = coverage; then pip install coveralls; fi
+    - pip install tox-travis
+    - pip install coveralls
 script:
     - tox
 after_success:
-    - if test "$TOXENV" = coverage; then coveralls; fi
-notifications:
-    slack:
-        - secure: NdVJltk6cQOjZHD0/8qzbdjRWYXgNhAkmoMuG8u0Y//9T7XY+BtNpOIDjInhU4/LZAP+kCl2uZuDo7ueU50+J+PKL1t7BhwWwn2al8S93M3KsiHvN8CrQkheQ2gpOTV70CaGO1sS1eokdVr7/ss557WIhkkFfZPv0hWkA+bhAiY=
+    - coveralls
