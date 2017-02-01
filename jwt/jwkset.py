@@ -29,21 +29,17 @@ class JWKSet(UserList):
         # equivalent alternatives by the application using them.)
 
         if kid and kty:
-            return [key for key in self._keys
+            return [key for key in self.data
                     if key.get_kty() == kty and key.get_kid() == kid]
         if kid:
-            return [key for key in self._keys
-                    if key.get_kid() == kid]
+            return [key for key in self.data if key.get_kid() == kid]
         if kty:
-            return [key for key in self._keys
-                    if key.get_kty() == kty]
+            return [key for key in self.data if key.get_kty() == kty]
 
-        return self._keys.copy()
+        return self.data.copy()
 
     def to_dict(self, public_only=True):
-        keys = [key.to_dict(public_only=public_only)
-                for keys in self.data.values()
-                for key in keys]
+        keys = [key.to_dict(public_only=public_only) for key in self.data]
         return {'keys': keys}
 
     @classmethod
