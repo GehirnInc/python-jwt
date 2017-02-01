@@ -41,7 +41,7 @@ with open(os.path.join(here, './README.rst'), 'r') as fh:
 
 setup(
     name='jwt',
-    version='0.4.0',
+    version='0.5.0',
 
     description='JSON Web Token library for Python 3.',
     long_description=long_description,
@@ -51,7 +51,7 @@ setup(
     author_email='kohei.yoshida@gehirn.co.jp',
 
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -64,7 +64,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 
-    packages=find_packages(),
+    packages=find_packages(exclude=('jwt.tests', )),
 
     install_requires=requires,
 )
