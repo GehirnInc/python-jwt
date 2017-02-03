@@ -28,6 +28,16 @@ from .exceptions import InvalidKeyTypeError
 from .jwk import AbstractJWKBase
 
 
+def std_hash_by_alg(alg: str) -> Callable[[bytes], object]:
+    if alg.endswith('S256'):
+        return hashlib.sha256
+    if alg.endswith('S384'):
+        return hashlib.sha384
+    if alg.endswith('S512'):
+        return hashlib.SHA512
+    raise ValueError('{} is not supported'.format(alg))
+
+
 class AbstractSigningAlgorithm:
 
     def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:

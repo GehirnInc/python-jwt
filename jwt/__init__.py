@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .jwa import std_hash_by_alg
 from .jwk import (
     AbstractJWKBase,
     jwk_from_dict,
@@ -29,6 +30,8 @@ from .jwt import JWT
 
 
 __all__ = [
+    # .jwa
+    'std_hash_by_alg',
     # .jwk
     'AbstractJWKBase',
     'jwk_from_dict',
