@@ -1,0 +1,75 @@
+version: 2
+jobs:
+  build34:
+    docker:
+      - image: circleci/python:3.4
+        environment:
+          TOXENV: py34
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: build34-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+      - run: |
+          if [ ! -d ".venv" ]; then
+            python -m venv ./.venv
+            . ./.venv/bin/activate
+          fi
+          pip install --upgrade pip tox
+          tox -v
+      - save_cache:
+          key: build34-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          paths:
+            - ".venv"
+            - ".tox"
+  build35:
+    docker:
+      - image: circleci/python:3.5
+        environment:
+          TOXENV: py35
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: build35-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+      - run: |
+          if [ ! -d ".venv" ]; then
+            python -m venv ./.venv
+            . ./.venv/bin/activate
+          fi
+          pip install --upgrade pip tox
+          tox -v
+      - save_cache:
+          key: build35-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          paths:
+            - ".venv"
+            - ".tox"
+  build36:
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          TOXENV: py36
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: build36-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+      - run: |
+          if [ ! -d ".venv" ]; then
+            python -m venv ./.venv
+            . ./.venv/bin/activate
+          fi
+          pip install --upgrade pip tox
+          tox -v
+      - save_cache:
+          key: build36-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          paths:
+            - ".venv"
+            - ".tox"
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build34
+      - build35
+      - build36
