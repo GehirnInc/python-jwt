@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import (
@@ -140,9 +141,7 @@ class RSAJWK(AbstractJWKBase):
 
     def sign(self, message: bytes, hash_fun: Callable = None,
              **options) -> bytes:
-        signer = self.keyobj.signer(padding.PKCS1v15(), hash_fun())
-        signer.update(message)
-        return signer.finalize()
+        return self.keyobj.sign(message, padding.PKCS1v15(), hash_fun())
 
     def verify(self, message: bytes, signature: bytes,
                hash_fun: Callable = None, **options) -> bool:
@@ -150,13 +149,10 @@ class RSAJWK(AbstractJWKBase):
             pubkey = self.keyobj.public_key()
         else:
             pubkey = self.keyobj
-        verifier = pubkey.verifier(
-            signature, padding.PKCS1v15(), hash_fun())
-        verifier.update(message)
         try:
-            verifier.verify()
+            pubkey.verify(signature, message, padding.PKCS1v15(), hash_fun())
             return True
-        except:
+        except InvalidSignature:
             return False
 
     def get_kty(self):
