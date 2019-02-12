@@ -9,16 +9,18 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: build34-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          keys:
+            - build34-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+            - build34-{{ checksum ".circleci/requirements.txt" }}-
       - run: |
           if [ ! -d ".venv" ]; then
             python -m venv ./.venv
           fi
           . ./.venv/bin/activate
-          pip install --upgrade pip tox
+          pip install -r ./.circleci/requirements.txt
           tox -v
       - save_cache:
-          key: build34-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          key: build34-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
             - ".tox"
@@ -31,16 +33,18 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: build35-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          keys:
+            - build35-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+            - build35-{{ checksum ".circleci/requirements.txt" }}-
       - run: |
           if [ ! -d ".venv" ]; then
             python -m venv ./.venv
           fi
           . ./.venv/bin/activate
-          pip install --upgrade pip tox
+          pip install -r ./.circleci/requirements.txt
           tox -v
       - save_cache:
-          key: build35-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          key: build35-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
             - ".tox"
@@ -53,16 +57,18 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: build36-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          keys:
+            - build36-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+            - build36-{{ checksum ".circleci/requirements.txt" }}-
       - run: |
           if [ ! -d ".venv" ]; then
             python -m venv ./.venv
           fi
           . ./.venv/bin/activate
-          pip install --upgrade pip tox
+          pip install -r ./.circleci/requirements.txt
           tox -v
       - save_cache:
-          key: build36-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          key: build36-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
             - ".tox"
@@ -75,16 +81,18 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: build37-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          keys:
+            - build37-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+            - build37-{{ checksum ".circleci/requirements.txt" }}-
       - run: |
           if [ ! -d ".venv" ]; then
             python -m venv ./.venv
           fi
           . ./.venv/bin/activate
-          pip install --upgrade pip tox
+          pip install -r ./.circleci/requirements.txt
           tox -v
       - save_cache:
-          key: build37-{{ checksum ".circleci/config.yml" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          key: build37-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
             - ".tox"
