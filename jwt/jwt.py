@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import json
+from typing import AbstractSet
 
 from .exceptions import (
     JWSEncodeError,
@@ -46,9 +47,9 @@ class JWT:
             raise JWTEncodeError('failed to encode to JWT') from why
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True) -> dict:
+               do_verify=True, algorithms: AbstractSet[str]=None) -> dict:
         try:
-            message_bin = self._jws.decode(message, key, do_verify)
+            message_bin = self._jws.decode(message, key, do_verify, algorithms)
         except JWSDecodeError as why:
             raise JWTDecodeError('failed to decode JWT') from why
         try:

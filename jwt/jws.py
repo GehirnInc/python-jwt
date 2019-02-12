@@ -15,7 +15,10 @@
 # limitations under the License.
 
 import json
-from typing import Tuple
+from typing import (
+    AbstractSet,
+    Tuple,
+)
 
 from .exceptions import (
     JWSEncodeError,
@@ -40,7 +43,10 @@ class JWS:
         self._supported_algs = supported_signing_algorithms()
 
     def _retrieve_alg(self, alg: str) -> AbstractSigningAlgorithm:
-        return self._supported_algs[alg]
+        try:
+            return self._supported_algs[alg]
+        except KeyError as why:
+            raise JWSDecodeError('Unsupported signing algorithm.')
 
     def encode(self, message: bytes, key: AbstractJWKBase = None, alg='HS256',
                optional_headers: dict = None) -> str:
@@ -74,11 +80,18 @@ class JWS:
         return header, message_bin, signature, signing_message
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True) -> bytes:
-        header, message_bin, signature, signing_message =\
-                self._decode_segments(message)
+               do_verify=True, algorithms: AbstractSet[str]=None) -> bytes:
+        if algorithms is None:
+            algorithms = set(supported_signing_algorithms().keys())
 
-        alg_impl = self._retrieve_alg(header['alg'])
+        header, message_bin, signature, signing_message = \
+            self._decode_segments(message)
+
+        alg_value = header['alg']
+        if alg_value not in algorithms:
+            raise JWSDecodeError('Unsupported signing algorithm.')
+
+        alg_impl = self._retrieve_alg(alg_value)
         if do_verify and not alg_impl.verify(
                 signing_message.encode('ascii'), key, signature):
             raise JWSDecodeError('JWS passed could not be validated')
