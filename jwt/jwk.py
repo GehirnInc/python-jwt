@@ -77,6 +77,7 @@ class AbstractJWKBase(ABC):
     def to_dict(self, public_only=True):
         pass  # pragma: no cover
 
+    @classmethod
     @abstractmethod
     def from_dict(cls, dct):
         pass  # pragma: no cover
