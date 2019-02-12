@@ -1,29 +1,5 @@
 version: 2
 jobs:
-  build34:
-    docker:
-      - image: circleci/python:3.4
-        environment:
-          TOXENV: py34
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - build34-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-            - build34-{{ checksum ".circleci/requirements.txt" }}-
-      - run: |
-          if [ ! -d ".venv" ]; then
-            python -m venv ./.venv
-          fi
-          . ./.venv/bin/activate
-          pip install -r ./.circleci/requirements.txt
-          tox -v
-      - save_cache:
-          key: build34-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-          paths:
-            - ".venv"
-            - ".tox"
   build35:
     docker:
       - image: circleci/python:3.5
@@ -100,7 +76,6 @@ workflows:
   version: 2
   build:
     jobs:
-      - build34
       - build35
       - build36
       - build37
