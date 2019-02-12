@@ -27,17 +27,9 @@ requires = [
     'cryptography >= 2.2.2, < 3.*',
 ]
 
-try:
-    import typing
-except ImportError:
-    requires.append('typing == 3.5.3.0')
-else:
-    del typing
-
 
 with open(os.path.join(here, './README.rst'), 'r') as fh:
     long_description = fh.read()
-
 
 setup(
     name='jwt',
