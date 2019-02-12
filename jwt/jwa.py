@@ -120,8 +120,8 @@ RS512 = RSAAlgorithm(SHA512)
 
 
 def supported_signing_algorithms():
+    # NOTE(yosida95): exclude vulnerable 'none' algorithm by default.
     return {
-        'none': none,
         'HS256': HS256,
         'HS384': HS384,
         'HS512': HS512,
