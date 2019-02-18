@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+from abc import ABC, abstractmethod
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -50,29 +51,36 @@ from .utils import (
 )
 
 
-class AbstractJWKBase:
+class AbstractJWKBase(ABC):
 
+    @abstractmethod
     def get_kty(self):
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
+    @abstractmethod
     def get_kid(self):
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
+    @abstractmethod
     def is_sign_key(self) -> bool:
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
+    @abstractmethod
     def sign(self, message: bytes, **options) -> bytes:
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
+    @abstractmethod
     def verify(self, message: bytes, signature: bytes, **options) -> bool:
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
+    @abstractmethod
     def to_dict(self, public_only=True):
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
     @classmethod
+    @abstractmethod
     def from_dict(cls, dct):
-        raise NotImplementedError()  # pragma: no cover
+        pass  # pragma: no cover
 
 
 class OctetJWK(AbstractJWKBase):
