@@ -15,12 +15,15 @@
 # limitations under the License.
 
 import hmac
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from typing import (
     Callable,
     Union,
 )
 
-from abc import ABC, abstractmethod
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
