@@ -17,6 +17,8 @@
 import json
 from unittest import TestCase
 
+from freezegun import freeze_time
+
 from jwt.jws import JWS
 from jwt.jwk import jwk_from_dict
 
@@ -59,6 +61,7 @@ class JWSTest(TestCase):
         message = self.inst.decode(self.compact_jws, self.key)
         self.assertEqual(message, self.message)
 
+    @freeze_time("2011-03-22 18:00:00", tz_offset=0)
     def test_decode_pubkey(self):
         message = self.inst.decode(self.compact_jws, self.pubkey)
         self.assertEqual(message, self.message)

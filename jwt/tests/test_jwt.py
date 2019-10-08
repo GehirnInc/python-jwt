@@ -17,8 +17,13 @@
 import json
 from unittest import TestCase
 
+from datetime import timedelta, datetime
+from freezegun import freeze_time
+
+from jwt.exceptions import JWTDecodeError
 from jwt.jwk import jwk_from_dict
 from jwt.jwt import JWT
+from jwt.utils import get_time
 
 from .helper import load_testdata
 
@@ -45,6 +50,29 @@ class JWTTest(TestCase):
             'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'
         )
 
+    @freeze_time("2011-03-22 18:00:00", tz_offset=0)
     def test_decode(self):
         message = self.inst.decode(self.compact_jws, self.key)
         self.assertEqual(message, self.message)
+
+    def test_expiration(self):
+        self.assertRaisesRegex(
+            JWTDecodeError, 'JWT Expired',
+            self.inst.decode, self.compact_jws, self.key
+        )
+
+    def test_no_before_used_before(self):
+        compact_jws = self.inst.encode({
+            'nbf': get_time(datetime.utcnow() + timedelta(hours=1))
+        }, self.key)
+        self.assertRaisesRegex(
+            JWTDecodeError, 'JWT Not valid yet',
+            self.inst.decode, compact_jws, self.key
+        )
+
+    def test_no_before_used_after(self):
+        message = {
+            'nbf': get_time(datetime.utcnow() - timedelta(hours=1))
+        }
+        compact_jws = self.inst.encode(message, self.key)
+        self.assertEqual(self.inst.decode(compact_jws, self.key), message)

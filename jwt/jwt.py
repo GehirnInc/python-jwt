@@ -17,6 +17,9 @@
 import json
 from typing import AbstractSet
 
+from datetime import datetime
+
+from jwt.utils import get_time
 from .exceptions import (
     JWSEncodeError,
     JWSDecodeError,
@@ -48,12 +51,23 @@ class JWT:
 
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True, algorithms: AbstractSet[str]=None) -> dict:
+        # utc now with timezone
+        now = get_time(get_time(datetime.utcnow()))
         try:
             message_bin = self._jws.decode(message, key, do_verify, algorithms)
         except JWSDecodeError as why:
             raise JWTDecodeError('failed to decode JWT') from why
         try:
             payload = json.loads(message_bin.decode('utf-8'))
+            if 'exp' in payload:
+                exp = get_time(payload.get('exp'))
+                if now > exp:
+                    raise JWTDecodeError("JWT Expired")
+            if 'nbf' in payload:
+                nbf = get_time(payload.get('nbf'))
+                if now < nbf:
+                    raise JWTDecodeError("JWT Not valid yet")
+
             return payload
         except ValueError as why:
             raise JWTDecodeError(
