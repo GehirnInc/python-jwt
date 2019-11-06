@@ -18,6 +18,7 @@ import json
 from typing import (
     AbstractSet,
     Tuple,
+    Callable,
 )
 
 from .exceptions import (
@@ -49,7 +50,8 @@ class JWS:
             raise JWSDecodeError('Unsupported signing algorithm.')
 
     def encode(self, message: bytes, key: AbstractJWKBase = None, alg='HS256',
-               optional_headers: dict = None) -> str:
+               optional_headers: dict = None,
+               dumps: Callable = json.dumps) -> str:
         if alg not in self._supported_algs:  # pragma: no cover
             raise JWSEncodeError('unsupported algorithm: {}'.format(alg))
         alg_impl = self._retrieve_alg(alg)
@@ -58,7 +60,7 @@ class JWS:
         header['alg'] = alg
 
         header_b64 = b64encode(
-            json.dumps(header, separators=(',', ':')).encode('ascii'))
+            dumps(header, separators=(',', ':')).encode('ascii'))
         message_b64 = b64encode(message)
         signing_message = header_b64 + '.' + message_b64
 
@@ -67,25 +69,27 @@ class JWS:
 
         return signing_message + '.' + signature_b64
 
-    def _decode_segments(self, message: str) -> Tuple[dict, bytes, bytes, str]:
+    def _decode_segments(self, message: str,
+                         loads: Callable) -> Tuple[dict, bytes, bytes, str]:
         try:
             signing_message, signature_b64 = message.rsplit('.', 1)
             header_b64, message_b64 = signing_message.split('.')
         except ValueError:
             raise JWSDecodeError('malformed JWS payload')
 
-        header = json.loads(b64decode(header_b64).decode('ascii'))
+        header = loads(b64decode(header_b64).decode('ascii'))
         message_bin = b64decode(message_b64)
         signature = b64decode(signature_b64)
         return header, message_bin, signature, signing_message
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True, algorithms: AbstractSet[str]=None) -> bytes:
+               do_verify=True, algorithms: AbstractSet[str]=None,
+               loads: Callable = json.loads) -> bytes:
         if algorithms is None:
             algorithms = set(supported_signing_algorithms().keys())
 
         header, message_bin, signature, signing_message = \
-            self._decode_segments(message)
+            self._decode_segments(message, loads=loads)
 
         alg_value = header['alg']
         if alg_value not in algorithms:
