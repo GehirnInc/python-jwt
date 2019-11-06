@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import json
-from typing import AbstractSet
+from typing import AbstractSet, Callable
 
 from .exceptions import (
     JWSEncodeError,
@@ -33,27 +33,31 @@ class JWT:
         self._jws = JWS()
 
     def encode(self, payload: dict, key: AbstractJWKBase = None, alg='HS256',
-               optional_headers: dict = None) -> str:
+               optional_headers: dict = None,
+               dumps: Callable = json.dumps) -> str:
         try:
-            message = json.dumps(payload).encode('utf-8')
+            message = dumps(payload).encode('utf-8')
         except ValueError as why:
             raise JWTEncodeError('payload must be able to encode in JSON')
 
         optional_headers = optional_headers and optional_headers.copy() or {}
         optional_headers['typ'] = 'JWT'
         try:
-            return self._jws.encode(message, key, alg, optional_headers)
+            return self._jws.encode(message, key, alg, optional_headers,
+                                    dumps=dumps)
         except JWSEncodeError as why:
             raise JWTEncodeError('failed to encode to JWT') from why
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True, algorithms: AbstractSet[str]=None) -> dict:
+               do_verify=True, algorithms: AbstractSet[str]=None,
+               loads: Callable = json.loads) -> dict:
         try:
-            message_bin = self._jws.decode(message, key, do_verify, algorithms)
+            message_bin = self._jws.decode(message, key, do_verify, algorithms,
+                                           loads=loads)
         except JWSDecodeError as why:
             raise JWTDecodeError('failed to decode JWT') from why
         try:
-            payload = json.loads(message_bin.decode('utf-8'))
+            payload = loads(message_bin.decode('utf-8'))
             return payload
         except ValueError as why:
             raise JWTDecodeError(
