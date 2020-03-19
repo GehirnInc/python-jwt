@@ -18,7 +18,9 @@ from datetime import datetime, timedelta, timezone
 from jwt.utils import (
     b64encode,
     b64decode,
-    get_time,
+    get_time_from_int,
+    get_time_from_str,
+    get_int_from_datetime,
     uint_b64encode,
     uint_b64decode,
 )
@@ -48,37 +50,45 @@ def test_uint_b64decode():
     assert uint_b64decode('AQAB') == 65537
 
 
-def test_get_time_str_wrong_format():
-    assert get_time('this is not rfc3339') is None
+def test_get_time_from_str_with_str_wrong_format():
+    assert get_time_from_str('this is not rfc3339') is None
 
 
-def test_get_time_str_leap_second():
+def test_get_time_from_str_with_str_leap_second():
     # Not supported
-    assert get_time('1990-12-31T23:59:60Z') is None
+    assert get_time_from_str('1990-12-31T23:59:60Z') is None
 
 
-def test_get_time_str_with_float():
+def test_get_time_from_str_with_str_with_float():
     expected = datetime(1985, 4, 12, 23, 20, 50, tzinfo=timezone.utc)
-    assert get_time('1985-04-12T23:20:50.52Z') == expected
+    assert get_time_from_str('1985-04-12T23:20:50.52Z') == expected
 
 
-def test_get_time_str_timezone():
+def test_get_time_from_str_with_str_timezone():
     expected = datetime(1996, 12, 19, 16, 39, 57, tzinfo=timezone.utc) + timedelta(hours=8)
-    assert get_time('1996-12-19T16:39:57-08:00') == expected
+    assert get_time_from_str('1996-12-19T16:39:57-08:00') == expected
     expected = datetime(1937, 1, 1, 12, 0, 27, tzinfo=timezone.utc) - timedelta(minutes=20)
-    assert get_time('1937-01-01T12:00:27.87+00:20') == expected
+    assert get_time_from_str('1937-01-01T12:00:27.87+00:20') == expected
 
 
-def test_get_time_str_as_int():
+def test_get_time_from_str_with_str_as_int():
     expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
-    assert get_time('1300819380') == expected
+    assert get_time_from_str('1300819380') == expected
 
 
-def test_get_time_with_int():
+def test_get_time_from_int_with_int():
     expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
-    assert get_time(1300819380) == expected
+    assert get_time_from_int(1300819380) == expected
 
 
-def test_get_time_with_datetime():
+def test_get_int_from_datetime_with_utc_timezone():
     param = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
-    assert get_time(param) == 1300819380
+    assert get_int_from_datetime(param) == 1300819380
+
+
+def test_get_int_from_datetime_with_timezone():
+    param = datetime.strptime(
+        '2011-03-22T19:43:00+0100',
+        '%Y-%m-%dT%H:%M:%S%z'
+    )
+    assert get_int_from_datetime(param) == 1300819380

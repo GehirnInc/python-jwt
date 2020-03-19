@@ -25,13 +25,13 @@ Examples
        jwk_from_dict,
        jwk_from_pem,
    )
-   from jwt.utils import get_time
+   from jwt.utils import get_int_from_datetime
 
    message = {
        'iss': 'https://example.com/',
        'sub': 'yosida95',
-       'iat': get_time(datetime.utcnow()),
-       'exp': get_time(datetime.utcnow() + timedelta(hours=1)),
+       'iat': get_int_from_datetime(datetime.utcnow()),
+       'exp': get_int_from_datetime(datetime.utcnow() + timedelta(hours=1)),
    }
 
    with open('rsa_private_key.pem', 'rb') as fh:

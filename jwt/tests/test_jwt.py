@@ -23,7 +23,7 @@ from freezegun import freeze_time
 from jwt.exceptions import JWTDecodeError
 from jwt.jwk import jwk_from_dict
 from jwt.jwt import JWT
-from jwt.utils import get_time
+from jwt.utils import get_int_from_datetime
 
 from .helper import load_testdata
 
@@ -63,7 +63,7 @@ class JWTTest(TestCase):
 
     def test_no_before_used_before(self):
         compact_jws = self.inst.encode({
-            'nbf': get_time(datetime.utcnow() + timedelta(hours=1))
+            'nbf': get_int_from_datetime(datetime.utcnow() + timedelta(hours=1))
         }, self.key)
         self.assertRaisesRegex(
             JWTDecodeError, 'JWT Not valid yet',
@@ -72,7 +72,7 @@ class JWTTest(TestCase):
 
     def test_no_before_used_after(self):
         message = {
-            'nbf': get_time(datetime.utcnow() - timedelta(hours=1))
+            'nbf': get_int_from_datetime(datetime.utcnow() - timedelta(hours=1))
         }
         compact_jws = self.inst.encode(message, self.key)
         self.assertEqual(self.inst.decode(compact_jws, self.key), message)

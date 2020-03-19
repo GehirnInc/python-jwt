@@ -19,7 +19,11 @@ from typing import AbstractSet
 
 from datetime import datetime
 
-from jwt.utils import get_time
+from jwt.utils import (
+    get_int_from_datetime,
+    get_time_from_int,
+    get_time_from_str,
+)
 from .exceptions import (
     JWSEncodeError,
     JWSDecodeError,
@@ -50,9 +54,10 @@ class JWT:
             raise JWTEncodeError('failed to encode to JWT') from why
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True, algorithms: AbstractSet[str]=None) -> dict:
+               do_verify=True, algorithms: AbstractSet[str] = None,
+               do_time_check: bool = True) -> dict:
         # utc now with timezone
-        now = get_time(get_time(datetime.utcnow()))
+        now = get_time_from_int(get_int_from_datetime(datetime.utcnow()))
         try:
             message_bin = self._jws.decode(message, key, do_verify, algorithms)
         except JWSDecodeError as why:
@@ -60,12 +65,20 @@ class JWT:
         try:
             payload = json.loads(message_bin.decode('utf-8'))
             if 'exp' in payload:
-                exp = get_time(payload.get('exp'))
-                if now > exp:
+                exp = payload.get('exp')
+                if isinstance(exp, str):
+                    exp = get_time_from_str(exp)
+                else:
+                    exp = get_time_from_int(exp)
+                if do_time_check and (exp is None or now > exp):
                     raise JWTDecodeError("JWT Expired")
             if 'nbf' in payload:
-                nbf = get_time(payload.get('nbf'))
-                if now < nbf:
+                nbf = payload.get('nbf')
+                if isinstance(nbf, str):
+                    nbf = get_time_from_str(nbf)
+                else:
+                    nbf = get_time_from_int(nbf)
+                if do_time_check and (nbf is None or now < nbf):
                     raise JWTDecodeError("JWT Not valid yet")
 
             return payload

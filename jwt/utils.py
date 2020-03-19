@@ -20,7 +20,6 @@ from base64 import (
 )
 
 from datetime import datetime, timezone
-from typing import Union
 
 
 RE_RFC3339 = re.compile(
@@ -63,49 +62,54 @@ def uint_b64decode(uint_b64: str) -> int:
     return value
 
 
-def get_time(value: Union[str, int, datetime]) -> Union[int, datetime, None]:
+def get_time_from_int(value: int) -> [datetime]:
     """
-    :param value: The value of time to convert
-                  If is str or int datetime or None will be returned
-                  If is datetime int will be returned
-    :return: None if the string is not valid
-             datetime if is valid str or int
-             int if value is datetime
+    :param value: seconds since the Epoch
+    :return: None if int is invalid else datetime
     """
-    returned = None
-    if isinstance(value, str):
-        is_rfc3339 = RE_RFC3339.match(value)
-        if is_rfc3339:
-            rfc3339 = is_rfc3339.groupdict()
-            tz = '+0000'
-            try:
-                if rfc3339.get('timezone'):
-                    tz = '{}{}{}'.format(
-                        rfc3339.get('symbol'),
-                        rfc3339.get('hour'),
-                        rfc3339.get('minute'),
-                    )
-                returned = datetime.strptime(
-                    rfc3339.get('datetime')+tz,
-                    '%Y-%m-%dT%H:%M:%S%z'
-                ).astimezone(timezone.utc)
-            except ValueError:
-                pass
-        else:
-            try:
-                value = int(value)
-            except ValueError:
-                pass
-
     if isinstance(value, int):
         returned = datetime.utcfromtimestamp(value)
         # Add the UTC timezone
-        returned = datetime.strptime(
+        return datetime.strptime(
             returned.strftime('%Y-%m-%dT%H:%M:%S') + '+0000',
             '%Y-%m-%dT%H:%M:%S%z'
         )
 
-    elif isinstance(value, datetime):
-        returned = int(value.timestamp())
 
-    return returned
+def get_time_from_str(value: str) -> [datetime]:
+    """
+    :param value: Str defined as RFC339
+                  Or int as str for seconds since the Epoch
+    :return: None if the string is invalid else datetime
+    """
+    is_rfc3339 = RE_RFC3339.match(value)
+    if is_rfc3339:
+        rfc3339 = is_rfc3339.groupdict()
+        tz = '+0000'
+        try:
+            if rfc3339.get('timezone'):
+                tz = '{}{}{}'.format(
+                    rfc3339.get('symbol'),
+                    rfc3339.get('hour'),
+                    rfc3339.get('minute'),
+                )
+            return datetime.strptime(
+                rfc3339.get('datetime') + tz,
+                '%Y-%m-%dT%H:%M:%S%z'
+            ).astimezone(timezone.utc)
+        except ValueError:
+            pass
+    else:
+        try:
+            return get_time_from_int(int(value))
+        except ValueError:
+            pass
+
+
+def get_int_from_datetime(value: datetime) -> [int]:
+    """
+    :param value: datetime with or without timezone, if don't contains timezone it will managed as it is UTC
+    :return: None if value is not datetime else seconds since the Epoch
+    """
+    if isinstance(value, datetime):
+        return int(value.timestamp())
