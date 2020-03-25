@@ -13,13 +13,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from jwt.utils import (
     b64encode,
     b64decode,
     get_time_from_int,
-    get_time_from_str,
     get_int_from_datetime,
     uint_b64encode,
     uint_b64decode,
@@ -50,35 +49,14 @@ def test_uint_b64decode():
     assert uint_b64decode('AQAB') == 65537
 
 
-def test_get_time_from_str_with_str_wrong_format():
-    assert get_time_from_str('this is not rfc3339') is None
-
-
-def test_get_time_from_str_with_str_leap_second():
-    # Not supported
-    assert get_time_from_str('1990-12-31T23:59:60Z') is None
-
-
-def test_get_time_from_str_with_str_with_float():
-    expected = datetime(1985, 4, 12, 23, 20, 50, tzinfo=timezone.utc)
-    assert get_time_from_str('1985-04-12T23:20:50.52Z') == expected
-
-
-def test_get_time_from_str_with_str_timezone():
-    expected = datetime(1996, 12, 19, 16, 39, 57, tzinfo=timezone.utc) + timedelta(hours=8)
-    assert get_time_from_str('1996-12-19T16:39:57-08:00') == expected
-    expected = datetime(1937, 1, 1, 12, 0, 27, tzinfo=timezone.utc) - timedelta(minutes=20)
-    assert get_time_from_str('1937-01-01T12:00:27.87+00:20') == expected
-
-
-def test_get_time_from_str_with_str_as_int():
-    expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
-    assert get_time_from_str('1300819380') == expected
-
-
 def test_get_time_from_int_with_int():
     expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
     assert get_time_from_int(1300819380) == expected
+
+
+def test_get_time_from_int_with_str():
+    expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
+    assert get_time_from_int('1300819380') == expected
 
 
 def test_get_int_from_datetime_with_utc_timezone():
