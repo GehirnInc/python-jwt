@@ -18,7 +18,7 @@ Examples
 
    import json
 
-   from datetime import datetime, timedelta
+   from datetime import datetime, timedelta, timezone
 
    from jwt import (
        JWT,
@@ -30,8 +30,8 @@ Examples
    message = {
        'iss': 'https://example.com/',
        'sub': 'yosida95',
-       'iat': get_int_from_datetime(datetime.utcnow()),
-       'exp': get_int_from_datetime(datetime.utcnow() + timedelta(hours=1)),
+       'iat': get_int_from_datetime(datetime.now(timezone.utc)),
+       'exp': get_int_from_datetime(datetime.now(timezone.utc) + timedelta(hours=1)),
    }
 
    with open('rsa_private_key.pem', 'rb') as fh:
