@@ -1,77 +1,66 @@
-version: 2
+version: 2.1
+commands:
+  pytest:
+    parameters:
+      pythonversion:
+        type: string
+    steps:
+      - restore_cache:
+          key: pytest-v1-<< parameters.pythonversion >>-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+      - run: |
+          if [ ! -d ".venv" ]; then
+            python3 -m venv ./.venv
+          fi
+          . ./.venv/bin/activate
+          pip3 install --upgrade pip
+          pip3 install -r ./.circleci/requirements.txt
+
+          tox -v -e circleci
+      - save_cache:
+          key: pytest-v1-<< parameters.pythonversion >>-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+          paths:
+            - ".tox"
+            - ".venv"
 jobs:
   build35:
     docker:
       - image: circleci/python:3.5
-        environment:
-          TOXENV: py35
+    environment:
+      ARTIFACTS: /tmp/python-jwt
     steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - build35-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-            - build35-{{ checksum ".circleci/requirements.txt" }}-
-      - run: |
-          if [ ! -d ".venv" ]; then
-            python -m venv ./.venv
-          fi
-          . ./.venv/bin/activate
-          pip install -r ./.circleci/requirements.txt
-          tox -v
-      - save_cache:
-          key: build35-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-          paths:
-            - ".venv"
-            - ".tox"
+      - checkout: {}
+      - pytest:
+          pythonversion: "35"
+      - store_test_results:
+          path: "/tmp/python-jwt"
+      - store_artifacts:
+          path: "/tmp/python-jwt"
   build36:
     docker:
       - image: circleci/python:3.6
-        environment:
-          TOXENV: py36
+    environment:
+      ARTIFACTS: /tmp/python-jwt
     steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - build36-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-            - build36-{{ checksum ".circleci/requirements.txt" }}-
-      - run: |
-          if [ ! -d ".venv" ]; then
-            python -m venv ./.venv
-          fi
-          . ./.venv/bin/activate
-          pip install -r ./.circleci/requirements.txt
-          tox -v
-      - save_cache:
-          key: build36-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-          paths:
-            - ".venv"
-            - ".tox"
+      - checkout: {}
+      - pytest:
+          pythonversion: "36"
+      - store_test_results:
+          path: "/tmp/python-jwt"
+      - store_artifacts:
+          path: "/tmp/python-jwt"
   build37:
     docker:
       - image: circleci/python:3.7
-        environment:
-          TOXENV: py37
+    environment:
+      ARTIFACTS: /tmp/python-jwt
     steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - build37-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-            - build37-{{ checksum ".circleci/requirements.txt" }}-
-      - run: |
-          if [ ! -d ".venv" ]; then
-            python -m venv ./.venv
-          fi
-          . ./.venv/bin/activate
-          pip install -r ./.circleci/requirements.txt
-          tox -v
-      - save_cache:
-          key: build37-{{ checksum ".circleci/requirements.txt" }}-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-          paths:
-            - ".venv"
-            - ".tox"
+      - checkout: {}
+      - pytest:
+          pythonversion: "37"
+      - store_test_results:
+          path: "/tmp/python-jwt"
+      - store_artifacts:
+          path: "/tmp/python-jwt"
 workflows:
   version: 2
   build:
