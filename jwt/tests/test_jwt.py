@@ -55,6 +55,11 @@ class JWTTest(TestCase):
         message = self.inst.decode(self.compact_jws, self.key)
         self.assertEqual(message, self.message)
 
+    def test_decode_with_do_time_check_disabled(self):
+        message = self.inst.decode(
+            self.compact_jws, self.key, do_time_check=False)
+        self.assertEqual(message, self.message)
+
     def test_expiration(self):
         self.assertRaisesRegex(
             JWTDecodeError, 'JWT Expired',
