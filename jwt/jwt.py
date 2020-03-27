@@ -63,22 +63,28 @@ class JWT:
             raise JWTDecodeError('failed to decode JWT') from why
         try:
             payload = json.loads(message_bin.decode('utf-8'))
-            if 'exp' in payload:
-                try:
-                    exp = get_time_from_int(payload.get('exp'))
-                    if do_time_check and (exp is None or now > exp):
-                        raise JWTDecodeError("JWT Expired")
-                except ValueError:
-                    raise JWTDecodeError("Invalid Expired value")
-            if 'nbf' in payload:
-                try:
-                    nbf = get_time_from_int(payload.get('nbf'))
-                    if do_time_check and (nbf is None or now < nbf):
-                        raise JWTDecodeError("JWT Not valid yet")
-                except ValueError:
-                    raise JWTDecodeError('Invalid "Not valid yet" value')
-
-            return payload
         except ValueError as why:
             raise JWTDecodeError(
                 'a payload of the JWT is not valid JSON') from why
+
+        # The "exp" (expiration time) claim identifies the expiration time on
+        # or after which the JWT MUST NOT be accepted for processing.
+        if 'exp' in payload and do_time_check:
+            try:
+                exp = get_time_from_int(payload['exp'])
+            except (TypeError, ValueError):
+                raise JWTDecodeError("Invalid Expired value")
+            if now >= exp:
+                raise JWTDecodeError("JWT Expired")
+
+        # The "nbf" (not before) claim identifies the time before which the JWT
+        # MUST NOT be accepted for processing.
+        if 'nbf' in payload and do_time_check:
+            try:
+                nbf = get_time_from_int(payload['nbf'])
+            except (TypeError, ValueError):
+                raise JWTDecodeError('Invalid "Not valid yet" value')
+            if now < nbf:
+                raise JWTDecodeError("JWT Not valid yet")
+
+        return payload
