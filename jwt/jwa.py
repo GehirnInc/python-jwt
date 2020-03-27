@@ -37,7 +37,7 @@ def std_hash_by_alg(alg: str) -> Callable[[bytes], object]:
     if alg.endswith('S384'):
         return hashlib.sha384
     if alg.endswith('S512'):
-        return hashlib.SHA512
+        return hashlib.sha512
     raise ValueError('{} is not supported'.format(alg))
 
 
