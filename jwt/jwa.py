@@ -16,7 +16,10 @@
 
 import hashlib
 import hmac
-from typing import Callable
+from typing import (
+    Callable,
+    Optional,
+)
 
 from cryptography.hazmat.primitives.hashes import (
     SHA256,
@@ -40,20 +43,20 @@ def std_hash_by_alg(alg: str) -> Callable[[bytes], object]:
 
 class AbstractSigningAlgorithm:
 
-    def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
+    def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
-    def verify(self, message: bytes, key: AbstractJWKBase,
+    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
                signature: bytes) -> bool:
         raise NotImplementedError()  # pragma: no cover
 
 
 class NoneAlgorithm(AbstractSigningAlgorithm):
 
-    def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
+    def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
         return b''
 
-    def verify(self, message: bytes, key: AbstractJWKBase,
+    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
                signature: bytes) -> bool:
         return hmac.compare_digest(signature, b'')
 
@@ -66,22 +69,21 @@ class HMACAlgorithm(AbstractSigningAlgorithm):
     def __init__(self, hash_fun: Callable) -> None:
         self.hash_fun = hash_fun
 
-    def _check_key(self, key: AbstractJWKBase) -> None:
-        if key.get_kty() != 'oct':
-            raise InvalidKeyTypeError((
-                'an octet key is required, but passed is {}'
-            ).format(key.get_kty()))
+    def _check_key(self, key: Optional[AbstractJWKBase]) -> AbstractJWKBase:
+        if not key or key.get_kty() != 'oct':
+            raise InvalidKeyTypeError('Octet key is required')
+        return key
 
     def _sign(self, message: bytes, key: bytes) -> bytes:
         return hmac.new(key, message, self.hash_fun).digest()
 
-    def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
-        self._check_key(key)
+    def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
+        key = self._check_key(key)
         return key.sign(message, signer=self._sign)
 
-    def verify(self, message: bytes, key: AbstractJWKBase,
+    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
                signature: bytes) -> bool:
-        self._check_key(key)
+        key = self._check_key(key)
         return key.verify(message, signature, signer=self._sign)
 
 
@@ -95,22 +97,22 @@ class RSAAlgorithm(AbstractSigningAlgorithm):
     def __init__(self, hash_fun: object) -> None:
         self.hash_fun = hash_fun
 
-    def _check_key(self, key: AbstractJWKBase, must_sign_key=False) -> None:
-        if key.get_kty() != 'RSA':
-            raise InvalidKeyTypeError((
-                'a RSA key is required, but passed is {}'
-            ).format(key.get_kty()))
+    def _check_key(self, key: Optional[AbstractJWKBase], must_sign_key=False) \
+            -> AbstractJWKBase:
+        if not key or key.get_kty() != 'RSA':
+            raise InvalidKeyTypeError('RSA key is required')
         if must_sign_key and not key.is_sign_key():
             raise InvalidKeyTypeError(
                 'a RSA private key is required, but passed is RSA public key')
+        return key
 
-    def sign(self, message: bytes, key: AbstractJWKBase) -> bytes:
-        self._check_key(key, must_sign_key=True)
+    def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
+        key = self._check_key(key, must_sign_key=True)
         return key.sign(message, hash_fun=self.hash_fun)
 
-    def verify(self, message: bytes, key: AbstractJWKBase,
+    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
                signature: bytes) -> bool:
-        self._check_key(key)
+        key = self._check_key(key)
         return key.verify(message, signature, hash_fun=self.hash_fun)
 
 

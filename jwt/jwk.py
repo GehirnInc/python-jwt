@@ -105,14 +105,15 @@ class OctetJWK(AbstractJWKBase):
     def is_sign_key(self) -> bool:
         return True
 
-    def sign(self, message: bytes,
-             signer: Callable[[bytes, bytes], bytes] = None,
-             **options) -> bytes:
+    def _get_signer(self, options) -> Callable[[bytes, bytes], bytes]:
+        return options['signer']
+
+    def sign(self, message: bytes, **options) -> bytes:
+        signer = self._get_signer(options)
         return signer(message, self.key)
 
-    def verify(self, message: bytes, signature: bytes,
-               signer: Callable[[bytes, bytes], bytes] = None,
-               **options) -> bool:
+    def verify(self, message: bytes, signature: bytes, **options) -> bool:
+        signer = self._get_signer(options)
         return hmac.compare_digest(signature, signer(message, self.key))
 
     def to_dict(self, public_only=True):
@@ -150,12 +151,15 @@ class RSAJWK(AbstractJWKBase):
     def is_sign_key(self) -> bool:
         return isinstance(self.keyobj, RSAPrivateKey)
 
-    def sign(self, message: bytes, hash_fun: Callable = None,
-             **options) -> bytes:
+    def _get_hash_fun(self, options) -> Callable:
+        return options['hash_fun']
+
+    def sign(self, message: bytes, **options) -> bytes:
+        hash_fun = self._get_hash_fun(options)
         return self.keyobj.sign(message, padding.PKCS1v15(), hash_fun())
 
-    def verify(self, message: bytes, signature: bytes,
-               hash_fun: Callable = None, **options) -> bool:
+    def verify(self, message: bytes, signature: bytes, **options) -> bool:
+        hash_fun = self._get_hash_fun(options)
         if self.is_sign_key():
             pubkey = self.keyobj.public_key()
         else:
