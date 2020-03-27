@@ -70,7 +70,7 @@ class JWT:
 
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True, algorithms: AbstractSet[str] = None,
-               do_time_check: bool = False) -> dict:
+               do_time_check: bool = True) -> dict:
         if not isinstance(self, JWT):  # pragma: no cover
             # https://github.com/GehirnInc/python-jwt/issues/15
             raise RuntimeError(
