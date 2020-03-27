@@ -14,7 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 
 from jwt.utils import (
     b64encode,
@@ -50,14 +54,9 @@ def test_uint_b64decode():
     assert uint_b64decode('AQAB') == 65537
 
 
-def test_get_time_from_int_with_int():
+def test_get_time_from_int():
     expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
     assert get_time_from_int(1300819380) == expected
-
-
-def test_get_time_from_int_with_str():
-    expected = datetime(2011, 3, 22, 18, 43, tzinfo=timezone.utc)
-    assert get_time_from_int('1300819380') == expected
 
 
 def test_get_int_from_datetime_with_utc_timezone():
@@ -66,8 +65,5 @@ def test_get_int_from_datetime_with_utc_timezone():
 
 
 def test_get_int_from_datetime_with_timezone():
-    param = datetime.strptime(
-        '2011-03-22T19:43:00+0100',
-        '%Y-%m-%dT%H:%M:%S%z'
-    )
+    param = datetime(2011, 3, 22, 19, 43, tzinfo=timezone(timedelta(hours=1)))
     assert get_int_from_datetime(param) == 1300819380

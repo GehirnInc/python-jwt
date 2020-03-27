@@ -20,7 +20,9 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Any,
     Callable,
+    Mapping,
     Union,
 )
 
@@ -264,7 +266,9 @@ def supported_key_types():
     }
 
 
-def jwk_from_dict(dct):
+def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
+    if not isinstance(dct, dict):  # pragma: no cover
+        raise TypeError('dct must be a dict')
     if 'kty' not in dct:
         raise MalformedJWKError('kty MUST be present')
 
@@ -276,6 +280,9 @@ def jwk_from_dict(dct):
 
 
 def jwk_from_pem(pem_content: bytes) -> AbstractJWKBase:
+    if not isinstance(pem_content, bytes):  # pragma: no cover
+        raise TypeError('pem_content must be a bytes')
+
     try:
         privkey = load_pem_private_key(
             pem_content, password=None, backend=default_backend())

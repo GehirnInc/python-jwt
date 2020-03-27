@@ -59,8 +59,8 @@ def get_time_from_int(value: int) -> datetime:
     :param value: seconds since the Epoch
     :return: datetime
     """
-    if not isinstance(value, int):
-        value = int(value)
+    if not isinstance(value, int):  # pragma: no cover
+        raise TypeError('an int is required')
     return datetime.fromtimestamp(value, timezone.utc)
 
 
@@ -70,4 +70,6 @@ def get_int_from_datetime(value: datetime) -> int:
                   it will managed as it is UTC
     :return: Seconds since the Epoch
     """
+    if not isinstance(value, datetime):  # pragma: no cover
+        raise TypeError('a datetime is required')
     return int(value.timestamp())

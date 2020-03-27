@@ -39,6 +39,22 @@ class JWT:
 
     def encode(self, payload: dict, key: AbstractJWKBase = None, alg='HS256',
                optional_headers: dict = None) -> str:
+        if not isinstance(self, JWT):  # pragma: no cover
+            # https://github.com/GehirnInc/python-jwt/issues/15
+            raise RuntimeError(
+                'encode must be called on a jwt.JWT() instance. '
+                'Do jwt.JWT().encode(...)')
+        if not isinstance(payload, dict):  # pragma: no cover
+            raise TypeError('payload must be a dict')
+        if not (key is None
+                or isinstance(key, AbstractJWKBase)):  # pragma: no cover
+            raise TypeError(
+                'key must be an instance of a class implements '
+                'jwt.AbstractJWKBase')
+        if not (optional_headers is None
+                or isinstance(optional_headers, dict)):  # pragma: no cover
+            raise TypeError('optional_headers must be a dict')
+
         try:
             message = json.dumps(payload).encode('utf-8')
         except ValueError as why:
@@ -55,6 +71,19 @@ class JWT:
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True, algorithms: AbstractSet[str] = None,
                do_time_check: bool = False) -> dict:
+        if not isinstance(self, JWT):  # pragma: no cover
+            # https://github.com/GehirnInc/python-jwt/issues/15
+            raise RuntimeError(
+                'decode must be called on a jwt.JWT() instance. '
+                'Do jwt.JWT().decode(...)')
+        if not isinstance(message, str):  # pragma: no cover
+            raise TypeError('message must be a str')
+        if not (key is None
+                or isinstance(key, AbstractJWKBase)):  # pragma: no cover
+            raise TypeError(
+                'key must be an instance of a class implements '
+                'jwt.AbstractJWKBase')
+
         # utc now with timezone
         now = datetime.now(timezone.utc)
         try:
@@ -72,7 +101,7 @@ class JWT:
         if 'exp' in payload and do_time_check:
             try:
                 exp = get_time_from_int(payload['exp'])
-            except (TypeError, ValueError):
+            except TypeError:
                 raise JWTDecodeError("Invalid Expired value")
             if now >= exp:
                 raise JWTDecodeError("JWT Expired")
@@ -82,7 +111,7 @@ class JWT:
         if 'nbf' in payload and do_time_check:
             try:
                 nbf = get_time_from_int(payload['nbf'])
-            except (TypeError, ValueError):
+            except TypeError:
                 raise JWTDecodeError('Invalid "Not valid yet" value')
             if now < nbf:
                 raise JWTDecodeError("JWT Not valid yet")
