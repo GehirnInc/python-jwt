@@ -52,14 +52,20 @@ class JWTTest(TestCase):
 
     @freeze_time("2011-03-22 18:00:00", tz_offset=0)
     def test_decode(self):
-        message = self.inst.decode(self.compact_jws, self.key)
+        message = self.inst.decode(
+            self.compact_jws, self.key, do_time_check=True)
         self.assertEqual(message, self.message)
 
     def test_expiration(self):
         self.assertRaisesRegex(
             JWTDecodeError, 'JWT Expired',
-            self.inst.decode, self.compact_jws, self.key
+            self.inst.decode, self.compact_jws, self.key, do_time_check=True,
         )
+
+    def test_expiration_without_do_time_check(self):
+        self.assertEqual(
+            self.inst.decode(self.compact_jws, self.key),
+            self.message)
 
     def test_no_before_used_before(self):
         compact_jws = self.inst.encode({
@@ -68,7 +74,7 @@ class JWTTest(TestCase):
         }, self.key)
         self.assertRaisesRegex(
             JWTDecodeError, 'JWT Not valid yet',
-            self.inst.decode, compact_jws, self.key
+            self.inst.decode, compact_jws, self.key, do_time_check=True,
         )
 
     def test_no_before_used_after(self):
@@ -77,4 +83,6 @@ class JWTTest(TestCase):
                 datetime.now(timezone.utc) - timedelta(hours=1))
         }
         compact_jws = self.inst.encode(message, self.key)
-        self.assertEqual(self.inst.decode(compact_jws, self.key), message)
+        self.assertEqual(
+            self.inst.decode(compact_jws, self.key, do_time_check=True),
+            message)

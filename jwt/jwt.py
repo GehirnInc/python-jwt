@@ -54,7 +54,7 @@ class JWT:
 
     def decode(self, message: str, key: AbstractJWKBase = None,
                do_verify=True, algorithms: AbstractSet[str] = None,
-               do_time_check: bool = True) -> dict:
+               do_time_check: bool = False) -> dict:
         # utc now with timezone
         now = datetime.now(timezone.utc)
         try:
