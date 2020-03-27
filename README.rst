@@ -18,17 +18,20 @@ Examples
 
    import json
 
+   from datetime import datetime, timedelta, timezone
+
    from jwt import (
        JWT,
        jwk_from_dict,
        jwk_from_pem,
    )
+   from jwt.utils import get_int_from_datetime
 
    message = {
        'iss': 'https://example.com/',
        'sub': 'yosida95',
-       'iat': 1485969205,
-       'exp': 1485972805,
+       'iat': get_int_from_datetime(datetime.now(timezone.utc)),
+       'exp': get_int_from_datetime(datetime.now(timezone.utc) + timedelta(hours=1)),
    }
 
    with open('rsa_private_key.pem', 'rb') as fh:

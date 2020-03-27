@@ -19,6 +19,9 @@ from base64 import (
     urlsafe_b64decode,
 )
 
+from datetime import datetime, timezone
+from typing import Optional
+
 
 def b64encode(s: bytes) -> str:
     s_bin = urlsafe_b64encode(s)
@@ -51,3 +54,21 @@ def uint_b64decode(uint_b64: str) -> int:
         value <<= 8
         value += int(b)
     return value
+
+
+def get_time_from_int(value: int) -> Optional[datetime]:
+    """
+    :param value: seconds since the Epoch
+    :return: None if int is invalid else datetime
+    """
+    if not isinstance(value, int):
+        value = int(value)
+    return datetime.fromtimestamp(value, timezone.utc)
+
+
+def get_int_from_datetime(value: datetime) -> Optional[int]:
+    """
+    :param value: datetime with or without timezone, if don't contains timezone it will managed as it is UTC
+    :return: None if value is not datetime else seconds since the Epoch
+    """
+    return int(value.timestamp())
