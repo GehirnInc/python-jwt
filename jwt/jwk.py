@@ -130,7 +130,7 @@ class OctetJWK(AbstractJWKBase):
         try:
             return cls(b64decode(dct['k']), **dct)
         except KeyError as why:
-            raise MalformedJWKError('k is required')
+            raise MalformedJWKError('k is required') from why
 
 
 class RSAJWK(AbstractJWKBase):
@@ -214,7 +214,7 @@ class RSAJWK(AbstractJWKBase):
             e = uint_b64decode(dct['e'])
             n = uint_b64decode(dct['n'])
         except KeyError as why:
-            raise MalformedJWKError('e and n are required')
+            raise MalformedJWKError('e and n are required') from why
         pub_numbers = RSAPublicNumbers(e, n)
         if 'd' not in dct:
             return cls(
@@ -257,7 +257,7 @@ def supported_key_types():
     return {
         'oct': OctetJWK,
         'RSA': RSAJWK,
-       }
+    }
 
 
 def jwk_from_dict(dct):

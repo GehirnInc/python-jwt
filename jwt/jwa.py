@@ -128,4 +128,4 @@ def supported_signing_algorithms():
         'RS256': RS256,
         'RS384': RS384,
         'RS512': RS512,
-       }
+    }

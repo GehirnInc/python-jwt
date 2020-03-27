@@ -45,7 +45,7 @@ class JWS:
     def _retrieve_alg(self, alg: str) -> AbstractSigningAlgorithm:
         try:
             return self._supported_algs[alg]
-        except KeyError as why:
+        except KeyError:
             raise JWSDecodeError('Unsupported signing algorithm.')
 
     def encode(self, message: bytes, key: AbstractJWKBase = None, alg='HS256',
@@ -80,7 +80,7 @@ class JWS:
         return header, message_bin, signature, signing_message
 
     def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True, algorithms: AbstractSet[str]=None) -> bytes:
+               do_verify=True, algorithms: AbstractSet[str] = None) -> bytes:
         if algorithms is None:
             algorithms = set(supported_signing_algorithms().keys())
 

@@ -18,7 +18,6 @@ from base64 import (
     urlsafe_b64encode,
     urlsafe_b64decode,
 )
-
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -68,7 +67,8 @@ def get_time_from_int(value: int) -> Optional[datetime]:
 
 def get_int_from_datetime(value: datetime) -> Optional[int]:
     """
-    :param value: datetime with or without timezone, if don't contains timezone it will managed as it is UTC
+    :param value: datetime with or without timezone, if don't contains timezone
+                  it will managed as it is UTC
     :return: None if value is not datetime else seconds since the Epoch
     """
     return int(value.timestamp())
