@@ -33,7 +33,7 @@ with open(os.path.join(here, './README.rst'), 'r') as fh:
 
 setup(
     name='jwt',
-    version='0.6.1',
+    version='1.0.0',
 
     description='JSON Web Token library for Python 3.',
     long_description=long_description,
@@ -43,7 +43,7 @@ setup(
     author_email='kohei.yoshida@gehirn.co.jp',
 
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
