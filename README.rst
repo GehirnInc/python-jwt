@@ -107,9 +107,7 @@ Supported Algorithms
 Supported Python Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Python 3.5
-- Python 3.6
-- Python 3.7
+- Python 3.6+
 
 
 License
