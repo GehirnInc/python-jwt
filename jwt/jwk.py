@@ -24,6 +24,7 @@ from typing import (
     Callable,
     Mapping,
     Union,
+    Optional
 )
 
 from cryptography.exceptions import InvalidSignature
@@ -39,10 +40,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPublicKey,
     RSAPublicNumbers,
 )
-from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
-    load_pem_public_key,
-)
+import cryptography.hazmat.primitives.serialization as serialization_module
 
 from .exceptions import (
     MalformedJWKError,
@@ -279,25 +277,78 @@ def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
     return supported[kty].from_dict(dct)
 
 
-def jwk_from_pem(pem_content: bytes) -> AbstractJWKBase:
-    if not isinstance(pem_content, bytes):  # pragma: no cover
-        raise TypeError('pem_content must be a bytes')
+def jwk_from_bytes(
+    content: bytes,
+    serializer_load_function_private:
+        Union[str, Callable[[bytes, Optional[str], object], object]],
+    serializer_load_function_public:
+        Union[str, Callable[[bytes, Optional[str], object], object]],
+    private_password: Optional[str] = None,
+    backend: Optional[object] = None,
+) -> AbstractJWKBase:
+    if not isinstance(content, bytes):  # pragma: no cover
+        raise TypeError('content must be bytes, it is {}'.format(type(content)))
+    if backend is None:
+        backend = default_backend()
+    # can raise AttributeError if you type it wrong
+    if isinstance(serializer_load_function_private, str):
+        serializer_load_function_private = getattr(
+            serialization_module,
+            serializer_load_function_private,
+        )
+    if isinstance(serializer_load_function_public, str):
+        serializer_load_function_public = getattr(
+            serialization_module,
+            serializer_load_function_public,
+        )
 
     try:
-        privkey = load_pem_private_key(
-            pem_content, password=None, backend=default_backend())
+        privkey = serializer_load_function_private(
+            content,
+            password=private_password,
+            backend=backend,
+        )
         if isinstance(privkey, RSAPrivateKey):
             return RSAJWK(privkey)
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError:
-        pass
+        pass  # if the key is public, do not raise errors and do the following
 
     try:
-        pubkey = load_pem_public_key(pem_content, backend=default_backend())
+        pubkey = serializer_load_function_public(
+            content,
+            backend=backend,
+        )
         if isinstance(pubkey, RSAPublicKey):
             return RSAJWK(pubkey)
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
         raise UnsupportedKeyTypeError('could not deserialize PEM') from why
+
+
+def jwk_from_pem(
+    pem_content: bytes,
+    private_password: Optional[str] = None,
+) -> AbstractJWKBase:
+    return jwk_from_bytes(
+        pem_content,
+        'load_pem_private_key',
+        'load_pem_public_key',
+        private_password=private_password,
+        backend=None,
+    )
+
+
+def jwk_from_der(
+    der_content: bytes,
+    private_password: Optional[str] = None,
+) -> AbstractJWKBase:
+    return jwk_from_bytes(
+        der_content,
+        'load_der_private_key',
+        'load_der_public_key',
+        private_password=private_password,
+        backend=None,
+    )
