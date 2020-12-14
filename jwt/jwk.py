@@ -26,6 +26,7 @@ from typing import (
     Union,
     Optional
 )
+from functools import wraps
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -277,44 +278,71 @@ def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
     return supported[kty].from_dict(dct)
 
 
-def jwk_from_bytes(
-    content: bytes,
-    serializer_load_function_private:
-        Union[str, Callable[[bytes, Optional[str], object], object]],
-    serializer_load_function_public:
-        Union[str, Callable[[bytes, Optional[str], object], object]],
-    private_password: Optional[str] = None,
-    backend: Optional[object] = None,
-) -> AbstractJWKBase:
-    if not isinstance(content, bytes):  # pragma: no cover
-        raise TypeError('content must be bytes, it is {}'.format(type(content)))
-    if backend is None:
-        backend = default_backend()
-    # can raise AttributeError if you type it wrong
-    if isinstance(serializer_load_function_private, str):
-        serializer_load_function_private = getattr(
-            serialization_module,
-            serializer_load_function_private,
-        )
-    if isinstance(serializer_load_function_public, str):
-        serializer_load_function_public = getattr(
-            serialization_module,
-            serializer_load_function_public,
-        )
+def jwk_from_bytes_argument_conversion(func):
+    @wraps(func)
+    def wrapper(content, **kwargs):
+        # content is the only positional argument allowed
+        # the function you wrap must use kwargs-only arguments PEP3102
+        if not isinstance(content, bytes):  # pragma: no cover
+            raise TypeError(
+                'content must be bytes, it is {}'.format(type(content)))
 
+        if 'private' in func.__name__:
+            kind = 'private'
+        elif 'public' in func.__name__:
+            kind = 'public'
+        else:
+            raise Exception("the wrapped function must have either public"
+                            " or private in it's name")
+        load_function = f'serializer_load_function_{kind}'
+        if kwargs.get(load_function) is None:
+            raise Exception(f'{load_function} is not Optional')
+        # now convert it to a Callable if it's a string
+        if isinstance(kwargs.get(load_function), str):
+            kwargs[load_function] = getattr(
+                serialization_module,
+                kwargs.get(load_function),
+            )
+
+        if kwargs.get('backend') is None:
+            kwargs['backend'] = default_backend()
+
+        return func(content, **kwargs)
+    return wrapper
+
+
+@jwk_from_bytes_argument_conversion
+def jwk_from_private_bytes(
+    content: bytes,
+    *,
+    serializer_load_function_private:
+        Union[str, Callable[[bytes, Optional[str], object], object]] = None,
+    password: Optional[str] = None,
+    backend: Optional[object] = None,
+) -> Optional[AbstractJWKBase]:
+    """This function is meant to be called from jwk_from_bytes"""
     try:
         privkey = serializer_load_function_private(
             content,
-            password=private_password,
+            password=password,
             backend=backend,
         )
         if isinstance(privkey, RSAPrivateKey):
             return RSAJWK(privkey)
-        raise UnsupportedKeyTypeError(
-            'unsupported key type')  # pragma: no cover
+        raise UnsupportedKeyTypeError('unsupported key type')
     except ValueError:
-        pass  # if the key is public, do not raise errors and do the following
+        return None
 
+
+@jwk_from_bytes_argument_conversion
+def jwk_from_public_bytes(
+    content: bytes,
+    *,
+    serializer_load_function_public:
+        Union[str, Callable[[bytes, Optional[str], object], object]] = None,
+    backend: Optional[object] = None,
+) -> Optional[AbstractJWKBase]:
+    """This function is meant to be called from jwk_from_bytes"""
     try:
         pubkey = serializer_load_function_public(
             content,
@@ -325,7 +353,33 @@ def jwk_from_bytes(
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
-        raise UnsupportedKeyTypeError('could not deserialize PEM') from why
+        raise UnsupportedKeyTypeError('could not deserialize') from why
+
+
+def jwk_from_bytes(
+    content: bytes,
+    *,
+    serializer_load_function_private:
+        Union[str, Callable[[bytes, Optional[str], object], object]] = None,
+    serializer_load_function_public:
+        Union[str, Callable[[bytes, Optional[str], object], object]] = None,
+    private_password: Optional[str] = None,
+    backend: Optional[object] = None,
+) -> AbstractJWKBase:
+    privkey = jwk_from_private_bytes(
+        content,
+        serializer_load_function_private=serializer_load_function_private,
+        password=private_password,
+        backend=backend,
+    )
+    if privkey is not None:
+        return privkey
+
+    return jwk_from_public_bytes(
+        content,
+        serializer_load_function_public=serializer_load_function_public,
+        backend=backend,
+    )
 
 
 def jwk_from_pem(
@@ -334,8 +388,8 @@ def jwk_from_pem(
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         pem_content,
-        'load_pem_private_key',
-        'load_pem_public_key',
+        serializer_load_function_private='load_pem_private_key',
+        serializer_load_function_public='load_pem_public_key',
         private_password=private_password,
         backend=None,
     )
@@ -347,8 +401,8 @@ def jwk_from_der(
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         der_content,
-        'load_der_private_key',
-        'load_der_public_key',
+        serializer_load_function_private='load_der_private_key',
+        serializer_load_function_public='load_der_public_key',
         private_password=private_password,
         backend=None,
     )
