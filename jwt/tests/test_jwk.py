@@ -73,7 +73,7 @@ def test_jwk_from_dict_unsupported_kty():
 def test_jwk_from_bytes_argument_conversion_confusing_name():
     with raises(Exception) as ex:
         @jwk_from_bytes_argument_conversion
-        def confusing(_content, *, _password=None, _backend=None):  # pylint: disable=unused-variable
+        def confusing():  # pylint: disable=unused-variable
             pass
     assert ("the wrapped function must have either public"
             " or private in it's name" in str(ex))
