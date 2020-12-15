@@ -26,8 +26,6 @@ from typing import (
     Union,
     Optional
 )
-from functools import wraps
-
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -279,21 +277,20 @@ def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
 
 
 def jwk_from_bytes_argument_conversion(func):
-    @wraps(func)
+    if 'private' in func.__name__:
+        kind = 'private'
+    elif 'public' in func.__name__:
+        kind = 'public'
+    else:
+        raise Exception("the wrapped function must have either public"
+                        " or private in it's name")
+
     def wrapper(content, **kwargs):
         # content is the only positional argument allowed
         # the function you wrap must use kwargs-only arguments PEP3102
         if not isinstance(content, bytes):  # pragma: no cover
             raise TypeError(
                 'content must be bytes, it is {}'.format(type(content)))
-
-        if 'private' in func.__name__:
-            kind = 'private'
-        elif 'public' in func.__name__:
-            kind = 'public'
-        else:
-            raise Exception("the wrapped function must have either public"
-                            " or private in it's name")
         load_function = f'serializer_load_function_{kind}'
         if kwargs.get(load_function) is None:
             raise Exception(f'{load_function} is not Optional')
