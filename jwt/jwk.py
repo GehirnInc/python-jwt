@@ -308,8 +308,8 @@ def jwk_from_bytes_argument_conversion(func):
                 kwargs.get(load_function),
             )
 
-        if kwargs.get('backend') is None:
-            kwargs['backend'] = default_backend()
+        if kwargs.get('options') is None:
+            kwargs['options'] = {}
 
         return func(content, **kwargs)
     return wrapper
@@ -323,6 +323,7 @@ def jwk_from_private_bytes(
         Union[str, Callable[[bytes, Optional[str], object], object]] = None,
     password: Optional[str] = None,
     backend: Optional[object] = None,
+    options: Optional[dict] = None,
 ) -> Optional[AbstractJWKBase]:
     """This function is meant to be called from jwk_from_bytes"""
     try:
@@ -332,7 +333,7 @@ def jwk_from_private_bytes(
             backend=backend,
         )
         if isinstance(privkey, RSAPrivateKey):
-            return RSAJWK(privkey)
+            return RSAJWK(privkey, **options)
         raise UnsupportedKeyTypeError('unsupported key type')
     except ValueError:
         return None
@@ -345,6 +346,7 @@ def jwk_from_public_bytes(
     serializer_load_function_public:
         Union[str, Callable[[bytes, Optional[str], object], object]] = None,
     backend: Optional[object] = None,
+    options: Optional[dict] = None
 ) -> Optional[AbstractJWKBase]:
     """This function is meant to be called from jwk_from_bytes"""
     try:
@@ -353,7 +355,7 @@ def jwk_from_public_bytes(
             backend=backend,
         )
         if isinstance(pubkey, RSAPublicKey):
-            return RSAJWK(pubkey)
+            return RSAJWK(pubkey, **options)
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
@@ -369,12 +371,14 @@ def jwk_from_bytes(
         Union[str, Callable[[bytes, Optional[str], object], object]] = None,
     private_password: Optional[str] = None,
     backend: Optional[object] = None,
+    options: Optional[dict] = None,
 ) -> AbstractJWKBase:
     privkey = jwk_from_private_bytes(
         content,
         serializer_load_function_private=serializer_load_function_private,
         password=private_password,
         backend=backend,
+        options=options,
     )
     if privkey is not None:
         return privkey
@@ -383,12 +387,14 @@ def jwk_from_bytes(
         content,
         serializer_load_function_public=serializer_load_function_public,
         backend=backend,
+        options=options,
     )
 
 
 def jwk_from_pem(
     pem_content: bytes,
     private_password: Optional[str] = None,
+    options: Optional[dict] = None,
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         pem_content,
@@ -396,12 +402,14 @@ def jwk_from_pem(
         serializer_load_function_public='load_pem_public_key',
         private_password=private_password,
         backend=None,
+        options=options,
     )
 
 
 def jwk_from_der(
     der_content: bytes,
     private_password: Optional[str] = None,
+    options: Optional[dict] = None,
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         der_content,
@@ -409,4 +417,5 @@ def jwk_from_der(
         serializer_load_function_public='load_der_public_key',
         private_password=private_password,
         backend=None,
+        options=options,
     )
