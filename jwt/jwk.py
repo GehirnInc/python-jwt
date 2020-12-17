@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import hmac
+from warnings import warn
 from abc import (
     ABC,
     abstractmethod,
@@ -157,7 +158,11 @@ class RSAJWK(AbstractJWKBase):
         return options['hash_fun']
 
     def _get_padding(self, options) -> padding.AsymmetricPadding:
-        return options['padding']
+        try:
+            return options['padding']
+        except KeyError:
+            warn('you should not use RSAJWK.verify/sign without jwa intermiediary, used legacy padding')
+            return padding.PKCS1v15()
 
     def sign(self, message: bytes, **options) -> bytes:
         hash_fun = self._get_hash_fun(options)

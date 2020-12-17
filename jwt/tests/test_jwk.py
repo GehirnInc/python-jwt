@@ -35,7 +35,7 @@ from jwt.jwk import (
     UnsupportedKeyTypeError,
 )
 
-from pytest import raises
+from pytest import raises, warns
 
 from .helper import load_testdata
 
@@ -196,4 +196,5 @@ class RSAJWKTest(unittest.TestCase):
     def test_verify_invalid(self):
         from cryptography.hazmat.primitives.hashes import SHA256
         inst = RSAJWK.from_dict(self.privkey_full_json)
-        assert not inst.verify(b'hello everyone', b'', hash_fun=SHA256)
+        with warns(UserWarning):
+            assert not inst.verify(b'hello everyone', b'', hash_fun=SHA256)
