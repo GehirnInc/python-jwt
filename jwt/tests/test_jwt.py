@@ -83,3 +83,17 @@ class JWTTest(TestCase):
         }
         compact_jws = self.inst.encode(message, self.key)
         self.assertEqual(self.inst.decode(compact_jws, self.key), message)
+
+    def test_encoded_with_rs(self):
+        message = {'hello': 'there'}
+        key = jwk_from_dict(
+            json.loads(load_testdata('rsa_privkey.json', 'r')))
+        comp = self.inst.encode(message, key, alg='RS256')
+        assert self.inst.decode(comp, key) == message
+
+    def test_encoded_with_pss(self):
+        message = {'hello': 'there'}
+        key = jwk_from_dict(
+            json.loads(load_testdata('rsa_privkey.json', 'r')))
+        comp = self.inst.encode(message, key, alg='PS256')
+        assert self.inst.decode(comp, key) == message

@@ -39,10 +39,13 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPublicKey,
     RSAPublicNumbers,
 )
+
 from cryptography.hazmat.primitives.serialization import (
     load_pem_private_key,
     load_pem_public_key,
 )
+
+from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
 from .exceptions import (
     MalformedJWKError,
@@ -147,27 +150,32 @@ class RSAJWK(AbstractJWKBase):
         self.keyobj = keyobj
 
         optnames = {'use', 'key_ops', 'alg', 'kid',
-                    'x5u', 'x5c', 'x5t', 'x5t#s256'}
+                    'x5u', 'x5c', 'x5t', 'x5t#s256', }
         self.options = {k: v for k, v in options.items() if k in optnames}
 
     def is_sign_key(self) -> bool:
         return isinstance(self.keyobj, RSAPrivateKey)
 
-    def _get_hash_fun(self, options) -> Callable:
+    def _get_hash_fun(self, options) -> Callable[[], HashAlgorithm]:
         return options['hash_fun']
+
+    def _get_padding(self, options) -> padding.AsymmetricPadding:
+        return options['padding']
 
     def sign(self, message: bytes, **options) -> bytes:
         hash_fun = self._get_hash_fun(options)
-        return self.keyobj.sign(message, padding.PKCS1v15(), hash_fun())
+        _padding = self._get_padding(options)
+        return self.keyobj.sign(message, _padding, hash_fun())
 
     def verify(self, message: bytes, signature: bytes, **options) -> bool:
         hash_fun = self._get_hash_fun(options)
+        _padding = self._get_padding(options)
         if self.is_sign_key():
             pubkey = self.keyobj.public_key()
         else:
             pubkey = self.keyobj
         try:
-            pubkey.verify(signature, message, padding.PKCS1v15(), hash_fun())
+            pubkey.verify(signature, message, _padding, hash_fun())
             return True
         except InvalidSignature:
             return False

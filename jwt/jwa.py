@@ -21,6 +21,7 @@ from typing import (
     Optional,
 )
 
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.hashes import (
     SHA256,
     SHA384,
@@ -97,8 +98,11 @@ class RSAAlgorithm(AbstractSigningAlgorithm):
     def __init__(self, hash_fun: object) -> None:
         self.hash_fun = hash_fun
 
-    def _check_key(self, key: Optional[AbstractJWKBase], must_sign_key=False) \
-            -> AbstractJWKBase:
+    def _check_key(
+        self,
+        key: Optional[AbstractJWKBase],
+        must_sign_key: bool = False,
+    ) -> AbstractJWKBase:
         if not key or key.get_kty() != 'RSA':
             raise InvalidKeyTypeError('RSA key is required')
         if must_sign_key and not key.is_sign_key():
@@ -108,17 +112,73 @@ class RSAAlgorithm(AbstractSigningAlgorithm):
 
     def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
         key = self._check_key(key, must_sign_key=True)
-        return key.sign(message, hash_fun=self.hash_fun)
+        return key.sign(message, hash_fun=self.hash_fun,
+                        padding=padding.PKCS1v15())
 
-    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
-               signature: bytes) -> bool:
+    def verify(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase],
+        signature: bytes,
+    ) -> bool:
         key = self._check_key(key)
-        return key.verify(message, signature, hash_fun=self.hash_fun)
+        return key.verify(message, signature, hash_fun=self.hash_fun,
+                          padding=padding.PKCS1v15())
 
 
 RS256 = RSAAlgorithm(SHA256)
 RS384 = RSAAlgorithm(SHA384)
 RS512 = RSAAlgorithm(SHA512)
+
+
+class PSSRSAAlgorithm(AbstractSigningAlgorithm):
+    def __init__(self, hash_fun: object) -> None:
+        self.hash_fun = hash_fun
+
+    def _check_key(
+        self,
+        key: Optional[AbstractJWKBase],
+        must_sign_key: bool = False,
+    ) -> AbstractJWKBase:
+        if not key or key.get_kty() != 'RSA':
+            raise InvalidKeyTypeError('RSA key is required')
+        if must_sign_key and not key.is_sign_key():
+            raise InvalidKeyTypeError(
+                'a RSA private key is required, but passed is RSA public key')
+        return key
+
+    def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
+        key = self._check_key(key, must_sign_key=True)
+        return key.sign(
+            message,
+            hash_fun=self.hash_fun,
+            padding=padding.PSS(
+                mgf=padding.MGF1(self.hash_fun()),
+                salt_length=self.hash_fun().digest_size,
+            ),
+        )
+
+    def verify(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase],
+        signature: bytes
+    ) -> bool:
+        key = self._check_key(key)
+        return key.verify(
+            message,
+            signature,
+            hash_fun=self.hash_fun,
+            padding=padding.PSS(
+                mgf=padding.MGF1(self.hash_fun()),
+                salt_length=self.hash_fun().digest_size,
+            ),
+        )
+
+
+PS256 = PSSRSAAlgorithm(SHA256)
+PS384 = PSSRSAAlgorithm(SHA384)
+PS512 = PSSRSAAlgorithm(SHA512)
 
 
 def supported_signing_algorithms():
@@ -130,4 +190,7 @@ def supported_signing_algorithms():
         'RS256': RS256,
         'RS384': RS384,
         'RS512': RS512,
+        'PS256': PS256,
+        'PS384': PS384,
+        'PS512': PS512,
     }
