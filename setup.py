@@ -24,7 +24,7 @@ from setuptools import (
 
 here = os.path.dirname(__file__)
 requires = [
-    'cryptography > 2.9.2, <= 3.2.1',
+    'cryptography > 2.9.2, <= 3.4',
 ]
 
 
