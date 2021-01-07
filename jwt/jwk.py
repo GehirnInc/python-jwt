@@ -26,6 +26,7 @@ from typing import (
     Union,
     Optional
 )
+from functools import wraps
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -285,6 +286,7 @@ def jwk_from_bytes_argument_conversion(func):
         raise Exception("the wrapped function must have either public"
                         " or private in it's name")
 
+    @wraps(func)
     def wrapper(content, **kwargs):
         # content is the only positional argument allowed
         # the function you wrap must use kwargs-only arguments PEP3102
