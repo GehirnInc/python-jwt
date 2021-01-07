@@ -330,8 +330,8 @@ def jwk_from_private_bytes(
         if isinstance(privkey, RSAPrivateKey):
             return RSAJWK(privkey, **options)
         raise UnsupportedKeyTypeError('unsupported key type')
-    except ValueError:
-        return None
+    except ValueError as ex:
+        raise UnsupportedKeyTypeError('this is probably a public key') from ex
 
 
 @jwk_from_bytes_argument_conversion
@@ -368,22 +368,21 @@ def jwk_from_bytes(
     backend: Optional[object] = None,
     options: Optional[dict] = None,
 ) -> AbstractJWKBase:
-    privkey = jwk_from_private_bytes(
-        content,
-        serializer_load_function_private=serializer_load_function_private,
-        password=private_password,
-        backend=backend,
-        options=options,
-    )
-    if privkey is not None:
-        return privkey
-
-    return jwk_from_public_bytes(
-        content,
-        serializer_load_function_public=serializer_load_function_public,
-        backend=backend,
-        options=options,
-    )
+    try:
+        return jwk_from_private_bytes(
+            content,
+            serializer_load_function_private=serializer_load_function_private,
+            password=private_password,
+            backend=backend,
+            options=options,
+        )
+    except UnsupportedKeyTypeError:
+        return jwk_from_public_bytes(
+            content,
+            serializer_load_function_public=serializer_load_function_public,
+            backend=backend,
+            options=options,
+        )
 
 
 def jwk_from_pem(
