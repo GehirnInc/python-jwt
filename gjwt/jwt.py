@@ -19,7 +19,7 @@ from typing import AbstractSet
 
 from datetime import datetime, timezone
 
-from jwt.utils import (
+from gjwt.utils import (
     get_time_from_int,
 )
 from .exceptions import (
