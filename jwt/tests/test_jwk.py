@@ -29,7 +29,6 @@ from jwt.jwk import (
     jwk_from_dict,
     jwk_from_pem,
     jwk_from_der,
-    jwk_from_bytes,
     jwk_from_bytes_argument_conversion,
 
     MalformedJWKError,
@@ -77,12 +76,6 @@ def test_jwk_from_bytes_argument_conversion_confusing_name():
             pass
     assert ("the wrapped function must have either public"
             " or private in it's name" in str(ex))
-
-
-def test_jwk_from_bytes_without_load_function():
-    with raises(Exception) as ex:
-        jwk_from_bytes(b'')
-    assert 'is not Optional' in str(ex)
 
 
 def test_jwk_from_unsupported_pem():
