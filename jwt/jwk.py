@@ -296,9 +296,6 @@ def jwk_from_bytes_argument_conversion(func):
 
     @wraps(func)
     def wrapper(content, loader, **kwargs):
-        if not isinstance(content, bytes):
-            raise TypeError(
-                'content must be bytes, it is {}'.format(type(content)))
         # now convert it to a Callable if it's a string
         if isinstance(loader, str):
             loader = getattr(serialization_module, loader)
