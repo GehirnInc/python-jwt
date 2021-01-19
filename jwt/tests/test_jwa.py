@@ -65,4 +65,5 @@ class HS256Test(TestCase):
         self.assertEqual(signature, self.signature)
 
     def test_verify(self):
-        self.assertTrue(HS256.verify(self.message, self.key, self.signature))
+        assert HS256.verify(self.message, self.key, self.signature)
+        assert not HS256.verify(self.message + b'asd', self.key, self.signature)

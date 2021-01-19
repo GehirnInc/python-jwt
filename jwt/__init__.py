@@ -18,7 +18,9 @@ from .jwa import std_hash_by_alg
 from .jwk import (
     AbstractJWKBase,
     jwk_from_dict,
+    jwk_from_bytes,
     jwk_from_pem,
+    jwk_from_der,
     supported_key_types,
 )
 from .jwkset import JWKSet
@@ -34,8 +36,10 @@ __all__ = [
     'std_hash_by_alg',
     # .jwk
     'AbstractJWKBase',
+    'jwk_from_bytes',
     'jwk_from_dict',
     'jwk_from_pem',
+    'jwk_from_der',
     'supported_key_types',
     # .jwkset
     'JWKSet',

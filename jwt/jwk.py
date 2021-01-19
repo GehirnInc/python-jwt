@@ -24,8 +24,11 @@ from typing import (
     Callable,
     Mapping,
     Union,
+    Optional
 )
+from functools import wraps
 
+import cryptography.hazmat.primitives.serialization as serialization_module
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -39,12 +42,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPublicKey,
     RSAPublicNumbers,
 )
-
-from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
-    load_pem_public_key,
-)
-
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
 from .exceptions import (
@@ -287,25 +284,116 @@ def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
     return supported[kty].from_dict(dct)
 
 
-def jwk_from_pem(pem_content: bytes) -> AbstractJWKBase:
-    if not isinstance(pem_content, bytes):  # pragma: no cover
-        raise TypeError('pem_content must be a bytes')
+def jwk_from_bytes_argument_conversion(func):
+    if not ('private' in func.__name__ or 'public' in func.__name__):
+        raise Exception("the wrapped function must have either public"
+                        " or private in it's name")
 
+    @wraps(func)
+    def wrapper(content, loader, **kwargs):
+        if not isinstance(content, bytes):
+            raise TypeError(
+                'content must be bytes, it is {}'.format(type(content)))
+        # now convert it to a Callable if it's a string
+        if isinstance(loader, str):
+            loader = getattr(serialization_module, loader)
+
+        if kwargs.get('options') is None:
+            kwargs['options'] = {}
+
+        return func(content, loader, **kwargs)
+    return wrapper
+
+
+@jwk_from_bytes_argument_conversion
+def jwk_from_private_bytes(
+    content: bytes,
+    private_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    *,
+    password: Optional[str] = None,
+    backend: Optional[object] = None,
+    options: Optional[dict] = None,
+) -> Optional[AbstractJWKBase]:
+    """This function is meant to be called from jwk_from_bytes"""
     try:
-        privkey = load_pem_private_key(
-            pem_content, password=None, backend=default_backend())
+        privkey = private_loader(content, password=password, backend=backend)
         if isinstance(privkey, RSAPrivateKey):
-            return RSAJWK(privkey)
-        raise UnsupportedKeyTypeError(
-            'unsupported key type')  # pragma: no cover
-    except ValueError:
-        pass
+            return RSAJWK(privkey, **options)
+        raise UnsupportedKeyTypeError('unsupported key type')
+    except ValueError as ex:
+        raise UnsupportedKeyTypeError('this is probably a public key') from ex
 
+
+@jwk_from_bytes_argument_conversion
+def jwk_from_public_bytes(
+    content: bytes,
+    public_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    *,
+    backend: Optional[object] = None,
+    options: Optional[dict] = None
+) -> Optional[AbstractJWKBase]:
+    """This function is meant to be called from jwk_from_bytes"""
     try:
-        pubkey = load_pem_public_key(pem_content, backend=default_backend())
+        pubkey = public_loader(content, backend=backend)
         if isinstance(pubkey, RSAPublicKey):
-            return RSAJWK(pubkey)
+            return RSAJWK(pubkey, **options)
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
-        raise UnsupportedKeyTypeError('could not deserialize PEM') from why
+        raise UnsupportedKeyTypeError('could not deserialize') from why
+
+
+def jwk_from_bytes(
+    content: bytes,
+    private_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    public_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    *,
+    private_password: Optional[str] = None,
+    backend: Optional[object] = None,
+    options: Optional[dict] = None,
+) -> AbstractJWKBase:
+    try:
+        return jwk_from_private_bytes(
+            content,
+            private_loader,
+            password=private_password,
+            backend=backend,
+            options=options,
+        )
+    except UnsupportedKeyTypeError:
+        return jwk_from_public_bytes(
+            content,
+            public_loader,
+            backend=backend,
+            options=options,
+        )
+
+
+def jwk_from_pem(
+    pem_content: bytes,
+    private_password: Optional[str] = None,
+    options: Optional[dict] = None,
+) -> AbstractJWKBase:
+    return jwk_from_bytes(
+        pem_content,
+        private_loader='load_pem_private_key',
+        public_loader='load_pem_public_key',
+        private_password=private_password,
+        backend=None,
+        options=options,
+    )
+
+
+def jwk_from_der(
+    der_content: bytes,
+    private_password: Optional[str] = None,
+    options: Optional[dict] = None,
+) -> AbstractJWKBase:
+    return jwk_from_bytes(
+        der_content,
+        private_loader='load_der_private_key',
+        public_loader='load_der_public_key',
+        private_password=private_password,
+        backend=None,
+        options=options,
+    )
