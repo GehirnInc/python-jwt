@@ -161,7 +161,8 @@ class RSAJWK(AbstractJWKBase):
         try:
             return options['padding']
         except KeyError:
-            warn('you should not use RSAJWK.verify/sign without jwa intermiediary, used legacy padding')
+            warn('you should not use RSAJWK.verify/sign without jwa '
+                 'intermiediary, used legacy padding')
             return padding.PKCS1v15()
 
     def sign(self, message: bytes, **options) -> bytes:
@@ -289,6 +290,12 @@ def jwk_from_dict(dct: Mapping[str, Any]) -> AbstractJWKBase:
     return supported[kty].from_dict(dct)
 
 
+PublicKeyLoaderT = Union[str, Callable[[bytes, object], object]]
+PrivateKeyLoaderT = Union[
+    str,
+    Callable[[bytes, Optional[str], object], object]]
+
+
 def jwk_from_bytes_argument_conversion(func):
     if not ('private' in func.__name__ or 'public' in func.__name__):
         raise Exception("the wrapped function must have either public"
@@ -310,7 +317,7 @@ def jwk_from_bytes_argument_conversion(func):
 @jwk_from_bytes_argument_conversion
 def jwk_from_private_bytes(
     content: bytes,
-    private_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    private_loader: PrivateKeyLoaderT,
     *,
     password: Optional[str] = None,
     backend: Optional[object] = None,
@@ -318,9 +325,9 @@ def jwk_from_private_bytes(
 ) -> Optional[AbstractJWKBase]:
     """This function is meant to be called from jwk_from_bytes"""
     try:
-        privkey = private_loader(content, password=password, backend=backend)
+        privkey = private_loader(content, password, backend)  # type: ignore
         if isinstance(privkey, RSAPrivateKey):
-            return RSAJWK(privkey, **options)
+            return RSAJWK(privkey, **options)  # type: ignore
         raise UnsupportedKeyTypeError('unsupported key type')
     except ValueError as ex:
         raise UnsupportedKeyTypeError('this is probably a public key') from ex
@@ -329,16 +336,16 @@ def jwk_from_private_bytes(
 @jwk_from_bytes_argument_conversion
 def jwk_from_public_bytes(
     content: bytes,
-    public_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    public_loader: PublicKeyLoaderT,
     *,
     backend: Optional[object] = None,
     options: Optional[dict] = None
 ) -> Optional[AbstractJWKBase]:
     """This function is meant to be called from jwk_from_bytes"""
     try:
-        pubkey = public_loader(content, backend=backend)
+        pubkey = public_loader(content, backend)  # type: ignore
         if isinstance(pubkey, RSAPublicKey):
-            return RSAJWK(pubkey, **options)
+            return RSAJWK(pubkey, **options)  # type: ignore
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
@@ -347,8 +354,8 @@ def jwk_from_public_bytes(
 
 def jwk_from_bytes(
     content: bytes,
-    private_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
-    public_loader: Union[str, Callable[[bytes, Optional[str], object], object]],
+    private_loader: PrivateKeyLoaderT,
+    public_loader: PublicKeyLoaderT,
     *,
     private_password: Optional[str] = None,
     backend: Optional[object] = None,
