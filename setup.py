@@ -33,7 +33,7 @@ with open(os.path.join(here, './README.rst'), 'r') as fh:
 
 setup(
     name='jwt',
-    version='1.1.0',
+    version='1.2.0',
 
     description='JSON Web Token library for Python 3.',
     long_description=long_description,
