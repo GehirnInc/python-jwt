@@ -163,7 +163,7 @@ class RSAJWK(AbstractJWKBase):
     def _get_hash_fun(self, options) -> Callable[[], HashAlgorithm]:
         return options['hash_fun']
 
-    def _get_padding(self, options) -> padding.AsymmetricPadding:  # type: ignore[name-defined]
+    def _get_padding(self, options) -> padding.AsymmetricPadding:  # type: ignore[name-defined]  # noqa: E501
         try:
             return options['padding']
         except KeyError:
@@ -243,7 +243,7 @@ class RSAJWK(AbstractJWKBase):
         pub_numbers = RSAPublicNumbers(e, n)
         if 'd' not in dct:
             return cls(
-                pub_numbers.public_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]
+                pub_numbers.public_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
         d = uint_b64decode(dct['d'])
 
         privparams = {'p', 'q', 'dp', 'dq', 'qi'}
@@ -275,7 +275,7 @@ class RSAJWK(AbstractJWKBase):
             raise MalformedJWKError(
                 'p, q, dp, dq, qi MUST be present or'
                 'all of them MUST be absent')
-        return cls(priv_numbers.private_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]
+        return cls(priv_numbers.private_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
 
 
 def supported_key_types() -> Dict[str, Type[AbstractJWKBase]]:
@@ -309,7 +309,8 @@ _C = TypeVar("_C", bound=Callable[..., Any])
 # The above LoaderTs should actually not be Union, and this function should be
 # typed something like this. But, this will lose any kwargs from the typing
 # information. Probably needs: https://github.com/python/mypy/issues/3157
-# (func: Callable[[bytes, _Loader], _T]) -> Callable[[bytes, Union[str, _Loader]], _T]
+# (func: Callable[[bytes, _Loader], _T])
+#   -> Callable[[bytes, Union[str, _Loader]], _T]
 def jwk_from_bytes_argument_conversion(func: _C) -> _C:
     if not ('private' in func.__name__ or 'public' in func.__name__):
         raise Exception("the wrapped function must have either public"
@@ -341,7 +342,7 @@ def jwk_from_private_bytes(
     if options is None:
         options = {}
     try:
-        privkey = private_loader(content, password, backend)  # type: ignore[operator]
+        privkey = private_loader(content, password, backend)  # type: ignore[operator]  # noqa: E501
         if isinstance(privkey, RSAPrivateKey):
             return RSAJWK(privkey, **options)
         raise UnsupportedKeyTypeError('unsupported key type')

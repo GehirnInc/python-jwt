@@ -18,7 +18,6 @@ import json
 from typing import (
     AbstractSet,
     Dict,
-    Mapping,
     Optional,
     Tuple,
 )
@@ -51,7 +50,8 @@ class JWS:
         except KeyError:
             raise JWSDecodeError('Unsupported signing algorithm.')
 
-    def encode(self, message: bytes, key: Optional[AbstractJWKBase] = None, alg='HS256',
+    def encode(self, message: bytes, key: Optional[AbstractJWKBase] = None,
+               alg='HS256',
                optional_headers: Optional[Dict[str, str]] = None) -> str:
         if alg not in self._supported_algs:  # pragma: no cover
             raise JWSEncodeError('unsupported algorithm: {}'.format(alg))
@@ -70,7 +70,8 @@ class JWS:
 
         return signing_message + '.' + signature_b64
 
-    def _decode_segments(self, message: str) -> Tuple[Dict[str, str], bytes, bytes, str]:
+    def _decode_segments(
+            self, message: str) -> Tuple[Dict[str, str], bytes, bytes, str]:
         try:
             signing_message, signature_b64 = message.rsplit('.', 1)
             header_b64, message_b64 = signing_message.split('.')
@@ -83,7 +84,8 @@ class JWS:
         return header, message_bin, signature, signing_message
 
     def decode(self, message: str, key: Optional[AbstractJWKBase] = None,
-               do_verify=True, algorithms: Optional[AbstractSet[str]] = None) -> bytes:
+               do_verify=True,
+               algorithms: Optional[AbstractSet[str]] = None) -> bytes:
         if algorithms is None:
             algorithms = set(supported_signing_algorithms().keys())
 

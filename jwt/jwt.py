@@ -36,8 +36,9 @@ class JWT:
     def __init__(self):
         self._jws = JWS()
 
-    def encode(self, payload: Dict[str, Any], key: Optional[AbstractJWKBase] = None,
-               alg='HS256', optional_headers: Optional[Dict[str, str]] = None) -> str:
+    def encode(self, payload: Dict[str, Any],
+               key: Optional[AbstractJWKBase] = None, alg='HS256',
+               optional_headers: Optional[Dict[str, str]] = None) -> str:
         if not isinstance(self, JWT):  # pragma: no cover
             # https://github.com/GehirnInc/python-jwt/issues/15
             raise RuntimeError(
