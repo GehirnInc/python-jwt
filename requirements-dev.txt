@@ -1,0 +1,4 @@
+-e .
+tox ~= 3.7
+mypy
+types-freezegun

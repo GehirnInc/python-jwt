@@ -17,6 +17,8 @@
 import hashlib
 import hmac
 from typing import (
+    Any,
+    Dict,
     Callable,
     Optional,
 )
@@ -67,7 +69,7 @@ none = NoneAlgorithm()
 
 class HMACAlgorithm(AbstractSigningAlgorithm):
 
-    def __init__(self, hash_fun: Callable) -> None:
+    def __init__(self, hash_fun: Callable[[], object]) -> None:
         self.hash_fun = hash_fun
 
     def _check_key(self, key: Optional[AbstractJWKBase]) -> AbstractJWKBase:
@@ -132,7 +134,7 @@ RS512 = RSAAlgorithm(SHA512)
 
 
 class PSSRSAAlgorithm(AbstractSigningAlgorithm):
-    def __init__(self, hash_fun: object) -> None:
+    def __init__(self, hash_fun: Callable[[], Any]) -> None:
         self.hash_fun = hash_fun
 
     def _check_key(
@@ -152,7 +154,7 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
         return key.sign(
             message,
             hash_fun=self.hash_fun,
-            padding=padding.PSS(
+            padding=padding.PSS(  # type: ignore[no-untyped-call]
                 mgf=padding.MGF1(self.hash_fun()),
                 salt_length=self.hash_fun().digest_size,
             ),
@@ -169,7 +171,7 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
             message,
             signature,
             hash_fun=self.hash_fun,
-            padding=padding.PSS(
+            padding=padding.PSS(  # type: ignore[no-untyped-call]
                 mgf=padding.MGF1(self.hash_fun()),
                 salt_length=self.hash_fun().digest_size,
             ),
@@ -181,7 +183,7 @@ PS384 = PSSRSAAlgorithm(SHA384)
 PS512 = PSSRSAAlgorithm(SHA512)
 
 
-def supported_signing_algorithms():
+def supported_signing_algorithms() -> Dict[str, AbstractSigningAlgorithm]:
     # NOTE(yosida95): exclude vulnerable 'none' algorithm by default.
     return {
         'HS256': HS256,

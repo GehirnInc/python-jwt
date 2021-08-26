@@ -57,6 +57,7 @@ setup(
     ],
 
     packages=find_packages(exclude=('jwt.tests', )),
+    package_data={"jwt": ["py.typed"]},
 
     install_requires=requires,
     python_requires='>= 3.6',

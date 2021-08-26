@@ -17,10 +17,8 @@
 import json
 from unittest import TestCase
 
-from jwt.jwkset import (
-    JWKSet,
-    jwk_from_dict,
-)
+from jwt.jwk import jwk_from_dict
+from jwt.jwkset import JWKSet
 
 from .helper import load_testdata
 

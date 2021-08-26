@@ -24,7 +24,7 @@ from .jwk import (
     supported_key_types,
 )
 from .jwkset import JWKSet
-from .jws import (
+from .jwa import (
     AbstractSigningAlgorithm,
     supported_signing_algorithms,
 )
