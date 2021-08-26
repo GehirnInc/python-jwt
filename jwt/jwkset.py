@@ -15,11 +15,17 @@
 # limitations under the License.
 
 from collections import UserList
+from typing import TYPE_CHECKING
 
 from .jwk import AbstractJWKBase, jwk_from_dict
 
+if TYPE_CHECKING:
+    UserListBase = UserList[AbstractJWKBase]
+else:
+    UserListBase = UserList
 
-class JWKSet(UserList[AbstractJWKBase]):
+
+class JWKSet(UserListBase):
 
     def filter_keys(self, kid=None, kty=None):
         # When "kid" values are used within a JWK Set, different
