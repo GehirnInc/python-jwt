@@ -15,9 +15,8 @@
 # limitations under the License.
 
 import json
-from typing import AbstractSet
-
 from datetime import datetime, timezone
+from typing import AbstractSet, Any, Dict, Optional
 
 from jwt.utils import (
     get_time_from_int,
@@ -37,8 +36,9 @@ class JWT:
     def __init__(self):
         self._jws = JWS()
 
-    def encode(self, payload: dict, key: AbstractJWKBase = None, alg='HS256',
-               optional_headers: dict = None) -> str:
+    def encode(self, payload: Dict[str, Any],
+               key: Optional[AbstractJWKBase] = None, alg='HS256',
+               optional_headers: Optional[Dict[str, str]] = None) -> str:
         if not isinstance(self, JWT):  # pragma: no cover
             # https://github.com/GehirnInc/python-jwt/issues/15
             raise RuntimeError(
@@ -68,9 +68,9 @@ class JWT:
         except JWSEncodeError as why:
             raise JWTEncodeError('failed to encode to JWT') from why
 
-    def decode(self, message: str, key: AbstractJWKBase = None,
-               do_verify=True, algorithms: AbstractSet[str] = None,
-               do_time_check: bool = True) -> dict:
+    def decode(self, message: str, key: Optional[AbstractJWKBase] = None,
+               do_verify=True, algorithms: Optional[AbstractSet[str]] = None,
+               do_time_check: bool = True) -> Dict[str, Any]:
         if not isinstance(self, JWT):  # pragma: no cover
             # https://github.com/GehirnInc/python-jwt/issues/15
             raise RuntimeError(

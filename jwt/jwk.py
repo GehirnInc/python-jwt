@@ -23,7 +23,10 @@ from abc import (
 from typing import (
     Any,
     Callable,
+    Dict,
     Mapping,
+    Type,
+    TypeVar,
     Union,
     Optional
 )
@@ -56,15 +59,18 @@ from .utils import (
     uint_b64decode,
 )
 
+_AJWK = TypeVar("_AJWK", bound="AbstractJWKBase")
+_T = TypeVar("_T")
+
 
 class AbstractJWKBase(ABC):
 
     @abstractmethod
-    def get_kty(self):
+    def get_kty(self) -> str:
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_kid(self):
+    def get_kid(self) -> str:
         pass  # pragma: no cover
 
     @abstractmethod
@@ -80,12 +86,12 @@ class AbstractJWKBase(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def to_dict(self, public_only=True):
+    def to_dict(self, public_only: bool = True) -> Dict[str, str]:
         pass  # pragma: no cover
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, dct):
+    def from_dict(cls: Type[_AJWK], dct: Dict[str, object]) -> _AJWK:
         pass  # pragma: no cover
 
 
@@ -157,7 +163,7 @@ class RSAJWK(AbstractJWKBase):
     def _get_hash_fun(self, options) -> Callable[[], HashAlgorithm]:
         return options['hash_fun']
 
-    def _get_padding(self, options) -> padding.AsymmetricPadding:
+    def _get_padding(self, options) -> padding.AsymmetricPadding:  # type: ignore[name-defined]  # noqa: E501
         try:
             return options['padding']
         except KeyError:
@@ -166,6 +172,8 @@ class RSAJWK(AbstractJWKBase):
             return padding.PKCS1v15()
 
     def sign(self, message: bytes, **options) -> bytes:
+        if isinstance(self.keyobj, RSAPublicKey):
+            raise ValueError("Requires a private key.")
         hash_fun = self._get_hash_fun(options)
         _padding = self._get_padding(options)
         return self.keyobj.sign(message, _padding, hash_fun())
@@ -173,7 +181,7 @@ class RSAJWK(AbstractJWKBase):
     def verify(self, message: bytes, signature: bytes, **options) -> bool:
         hash_fun = self._get_hash_fun(options)
         _padding = self._get_padding(options)
-        if self.is_sign_key():
+        if isinstance(self.keyobj, RSAPrivateKey):
             pubkey = self.keyobj.public_key()
         else:
             pubkey = self.keyobj
@@ -235,7 +243,7 @@ class RSAJWK(AbstractJWKBase):
         pub_numbers = RSAPublicNumbers(e, n)
         if 'd' not in dct:
             return cls(
-                pub_numbers.public_key(backend=default_backend()), **dct)
+                pub_numbers.public_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
         d = uint_b64decode(dct['d'])
 
         privparams = {'p', 'q', 'dp', 'dq', 'qi'}
@@ -267,10 +275,10 @@ class RSAJWK(AbstractJWKBase):
             raise MalformedJWKError(
                 'p, q, dp, dq, qi MUST be present or'
                 'all of them MUST be absent')
-        return cls(priv_numbers.private_key(backend=default_backend()), **dct)
+        return cls(priv_numbers.private_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
 
 
-def supported_key_types():
+def supported_key_types() -> Dict[str, Type[AbstractJWKBase]]:
     return {
         'oct': OctetJWK,
         'RSA': RSAJWK,
@@ -294,9 +302,16 @@ PublicKeyLoaderT = Union[str, Callable[[bytes, object], object]]
 PrivateKeyLoaderT = Union[
     str,
     Callable[[bytes, Optional[str], object], object]]
+_Loader = TypeVar("_Loader", PublicKeyLoaderT, PrivateKeyLoaderT)
+_C = TypeVar("_C", bound=Callable[..., Any])
 
 
-def jwk_from_bytes_argument_conversion(func):
+# The above LoaderTs should actually not be Union, and this function should be
+# typed something like this. But, this will lose any kwargs from the typing
+# information. Probably needs: https://github.com/python/mypy/issues/3157
+# (func: Callable[[bytes, _Loader], _T])
+#   -> Callable[[bytes, Union[str, _Loader]], _T]
+def jwk_from_bytes_argument_conversion(func: _C) -> _C:
     if not ('private' in func.__name__ or 'public' in func.__name__):
         raise Exception("the wrapped function must have either public"
                         " or private in it's name")
@@ -311,7 +326,7 @@ def jwk_from_bytes_argument_conversion(func):
             kwargs['options'] = {}
 
         return func(content, loader, **kwargs)
-    return wrapper
+    return wrapper  # type: ignore[return-value]
 
 
 @jwk_from_bytes_argument_conversion
@@ -321,13 +336,15 @@ def jwk_from_private_bytes(
     *,
     password: Optional[str] = None,
     backend: Optional[object] = None,
-    options: Optional[dict] = None,
-) -> Optional[AbstractJWKBase]:
+    options: Optional[Mapping[str, object]] = None,
+) -> AbstractJWKBase:
     """This function is meant to be called from jwk_from_bytes"""
+    if options is None:
+        options = {}
     try:
-        privkey = private_loader(content, password, backend)  # type: ignore
+        privkey = private_loader(content, password, backend)  # type: ignore[operator]  # noqa: E501
         if isinstance(privkey, RSAPrivateKey):
-            return RSAJWK(privkey, **options)  # type: ignore
+            return RSAJWK(privkey, **options)
         raise UnsupportedKeyTypeError('unsupported key type')
     except ValueError as ex:
         raise UnsupportedKeyTypeError('this is probably a public key') from ex
@@ -339,13 +356,15 @@ def jwk_from_public_bytes(
     public_loader: PublicKeyLoaderT,
     *,
     backend: Optional[object] = None,
-    options: Optional[dict] = None
-) -> Optional[AbstractJWKBase]:
+    options: Optional[Mapping[str, object]] = None
+) -> AbstractJWKBase:
     """This function is meant to be called from jwk_from_bytes"""
+    if options is None:
+        options = {}
     try:
-        pubkey = public_loader(content, backend)  # type: ignore
+        pubkey = public_loader(content, backend)  # type: ignore[operator]
         if isinstance(pubkey, RSAPublicKey):
-            return RSAJWK(pubkey, **options)  # type: ignore
+            return RSAJWK(pubkey, **options)
         raise UnsupportedKeyTypeError(
             'unsupported key type')  # pragma: no cover
     except ValueError as why:
@@ -359,7 +378,7 @@ def jwk_from_bytes(
     *,
     private_password: Optional[str] = None,
     backend: Optional[object] = None,
-    options: Optional[dict] = None,
+    options: Optional[Mapping[str, object]] = None,
 ) -> AbstractJWKBase:
     try:
         return jwk_from_private_bytes(
@@ -381,7 +400,7 @@ def jwk_from_bytes(
 def jwk_from_pem(
     pem_content: bytes,
     private_password: Optional[str] = None,
-    options: Optional[dict] = None,
+    options: Optional[Mapping[str, object]] = None,
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         pem_content,
@@ -396,7 +415,7 @@ def jwk_from_pem(
 def jwk_from_der(
     der_content: bytes,
     private_password: Optional[str] = None,
-    options: Optional[dict] = None,
+    options: Optional[Mapping[str, object]] = None,
 ) -> AbstractJWKBase:
     return jwk_from_bytes(
         der_content,

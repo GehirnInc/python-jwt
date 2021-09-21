@@ -1,0 +1,5 @@
+-e .
+tox ~= 3.7
+mypy
+pytest>=6
+types-freezegun

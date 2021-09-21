@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPublicKey,
 )
 
+from jwt.exceptions import MalformedJWKError, UnsupportedKeyTypeError
 from jwt.jwk import (
     OctetJWK,
     RSAJWK,
@@ -30,9 +31,6 @@ from jwt.jwk import (
     jwk_from_pem,
     jwk_from_der,
     jwk_from_bytes_argument_conversion,
-
-    MalformedJWKError,
-    UnsupportedKeyTypeError,
 )
 
 from pytest import raises, warns
