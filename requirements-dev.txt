@@ -1,5 +1,5 @@
 -e .
-tox ~= 3.7
+tox ~= 3.24
 mypy
 pytest>=6
 types-freezegun
