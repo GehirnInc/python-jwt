@@ -163,7 +163,7 @@ class RSAJWK(AbstractJWKBase):
     def _get_hash_fun(self, options) -> Callable[[], HashAlgorithm]:
         return options['hash_fun']
 
-    def _get_padding(self, options) -> padding.AsymmetricPadding:  # type: ignore[name-defined]  # noqa: E501
+    def _get_padding(self, options) -> padding.AsymmetricPadding:
         try:
             return options['padding']
         except KeyError:
@@ -243,7 +243,7 @@ class RSAJWK(AbstractJWKBase):
         pub_numbers = RSAPublicNumbers(e, n)
         if 'd' not in dct:
             return cls(
-                pub_numbers.public_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
+                pub_numbers.public_key(backend=default_backend()), **dct)
         d = uint_b64decode(dct['d'])
 
         privparams = {'p', 'q', 'dp', 'dq', 'qi'}
@@ -275,7 +275,7 @@ class RSAJWK(AbstractJWKBase):
             raise MalformedJWKError(
                 'p, q, dp, dq, qi MUST be present or'
                 'all of them MUST be absent')
-        return cls(priv_numbers.private_key(backend=default_backend()), **dct)  # type: ignore[no-untyped-call]  # noqa: E501
+        return cls(priv_numbers.private_key(backend=default_backend()), **dct)
 
 
 def supported_key_types() -> Dict[str, Type[AbstractJWKBase]]:
