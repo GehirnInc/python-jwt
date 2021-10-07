@@ -1,7 +1,7 @@
 -e .
 tox ~= 3.7
 mypy
-pytest ~= 6.0
+pytest ~= 6.2
 pytest-cov
 pytest-flake8
 freezegun
