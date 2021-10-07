@@ -18,6 +18,8 @@ jobs:
           pkg-manager: pip-dist
           pip-dependency-file: setup.py
           args: -r requirements-dev.txt
+          pre-install-steps:
+            - run: python3 -m pip install --upgrade pip
       - run:
           name: Run tests
           command: |
