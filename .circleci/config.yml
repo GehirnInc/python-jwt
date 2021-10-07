@@ -1,34 +1,32 @@
 ---
 version: 2.1
+orbs:
+  python: circleci/python@1.4.0
 jobs:
   tests:
-    docker:
-      - image: circleci/python:<< parameters.pythonversion >>
     parameters:
       pythonversion:
         type: string
+    executor:
+      name: python/default
+      tag: << parameters.pythonversion >>
     environment:
       ARTIFACTS: /tmp/python-jwt
     steps:
       - checkout: {}
-      - restore_cache:
-          key: pytest-v1-<< parameters.pythonversion >>-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
+      - python/install-packages:
+          pkg-manager: pip-dist
+          pip-dependency-file: setup.py
+          args: -r requirements-dev.txt
       - run:
           name: Run tests
           command: |
-            if [ ! -d ".venv" ]; then
-              python3 -m venv ./.venv
-            fi
-            . ./.venv/bin/activate
-            pip3 install --upgrade pip
-            pip3 install -r requirements-dev.txt
             mypy
-            tox -v -e circleci
-      - save_cache:
-          key: pytest-v1-<< parameters.pythonversion >>-{{ checksum "tox.ini" }}-{{ checksum "setup.py" }}
-          paths:
-            - ".tox"
-            - ".venv"
+            py.test \
+              --verbose --capture=tee-sys \
+              --junit-xml="${ARTIFACTS}/junit/jwt.xml" \
+              --cov-report="html:${ARTIFACTS}/coverage" \
+              jwt
       - store_artifacts:
           path: "/tmp/python-jwt"
       - store_test_results:
