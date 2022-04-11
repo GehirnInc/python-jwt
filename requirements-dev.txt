@@ -1,5 +1,5 @@
 -e .
-tox ~= 3.7
+tox ~= 3.25
 mypy
 pytest ~= 6.0
 pytest-cov
