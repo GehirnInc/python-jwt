@@ -18,9 +18,7 @@ import json
 from datetime import datetime, timezone
 from typing import AbstractSet, Any, Dict, Optional
 
-from jwt.utils import (
-    get_time_from_int,
-)
+from .utils import get_time_from_int
 from .exceptions import (
     JWSEncodeError,
     JWSDecodeError,
