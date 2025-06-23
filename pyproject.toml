@@ -47,9 +47,6 @@ test = [
     "freezegun",
 ]
 
-[tool.setuptools.packages.find]
-exclude = ["jwt.tests*"]
-
 [tool.pytest.ini_options]
 addopts = "--cov jwt --cov-report term"
 
