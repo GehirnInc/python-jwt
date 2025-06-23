@@ -22,7 +22,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            mypy
+            mypy ./jwt
             py.test \
               --verbose --capture=tee-sys \
               --junit-xml="${ARTIFACTS}/junit/jwt.xml" \

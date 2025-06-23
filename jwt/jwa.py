@@ -69,7 +69,7 @@ none = NoneAlgorithm()
 
 class HMACAlgorithm(AbstractSigningAlgorithm):
 
-    def __init__(self, hash_fun: Callable[[], object]) -> None:
+    def __init__(self, hash_fun: Callable[[], Any]) -> None:
         self.hash_fun = hash_fun
 
     def _check_key(self, key: Optional[AbstractJWKBase]) -> AbstractJWKBase:
@@ -154,7 +154,7 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
         return key.sign(
             message,
             hash_fun=self.hash_fun,
-            padding=padding.PSS(  # type: ignore[no-untyped-call]
+            padding=padding.PSS(
                 mgf=padding.MGF1(self.hash_fun()),
                 salt_length=self.hash_fun().digest_size,
             ),
@@ -171,7 +171,7 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
             message,
             signature,
             hash_fun=self.hash_fun,
-            padding=padding.PSS(  # type: ignore[no-untyped-call]
+            padding=padding.PSS(
                 mgf=padding.MGF1(self.hash_fun()),
                 salt_length=self.hash_fun().digest_size,
             ),
