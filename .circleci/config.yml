@@ -1,7 +1,7 @@
 ---
 version: 2.1
 orbs:
-  python: circleci/python@1.4.0
+  python: circleci/python@3
 jobs:
   tests:
     parameters:
@@ -16,10 +16,9 @@ jobs:
       - checkout: {}
       - python/install-packages:
           pkg-manager: pip-dist
-          pip-dependency-file: setup.py
-          args: -r requirements-dev.txt
-          pre-install-steps:
-            - run: python3 -m pip install --upgrade pip
+          pip-dependency-file: pyproject.toml
+          path-args: '.[dev,test]'
+          cache-version: v2
       - run:
           name: Run tests
           command: |
@@ -27,8 +26,7 @@ jobs:
             py.test \
               --verbose --capture=tee-sys \
               --junit-xml="${ARTIFACTS}/junit/jwt.xml" \
-              --cov-report="html:${ARTIFACTS}/coverage" \
-              jwt
+              --cov-report="html:${ARTIFACTS}/coverage"
       - store_artifacts:
           path: "/tmp/python-jwt"
       - store_test_results:

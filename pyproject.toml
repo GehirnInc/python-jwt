@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools >= 69.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jwt"
+version = "1.3.1"
+description = "JSON Web Token library for Python 3."
+readme = "README.rst"
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "cryptography >= 3.1, != 3.4.0",
+]
+
+requires-python = ">= 3.6"
+
+authors = [
+  {name = "Kohei YOSHIDA", email = "kohei.yoshida@gehirn.co.jp"},
+]
+
+[project.urls]
+Repository = "https://github.com/GehirnInc/python-jwt.git"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "types-freezegun",
+]
+
+test = [
+    "pytest ~= 6.0",
+    "pytest-cov",
+    "freezegun",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["jwt.tests*"]
+
+[tool.pytest.ini_options]
+addopts = "--cov jwt --cov-report term"
+
+[tool.coverage.report]
+show_missing = true

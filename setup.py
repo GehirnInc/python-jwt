@@ -15,50 +15,6 @@
 # limitations under the License.
 
 
-import os
+from setuptools import setup
 
-from setuptools import (
-    setup,
-    find_packages,
-)
-
-here = os.path.dirname(__file__)
-requires = [
-    'cryptography >= 3.1, != 3.4.0',
-]
-
-
-with open(os.path.join(here, './README.rst'), 'r') as fh:
-    long_description = fh.read()
-
-setup(
-    name='jwt',
-    version='1.3.1',
-
-    description='JSON Web Token library for Python 3.',
-    long_description=long_description,
-    url='https://github.com/GehirnInc/python-jwt',
-
-    author='Kohei YOSHIDA',
-    author_email='kohei.yoshida@gehirn.co.jp',
-
-    classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Security",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-    ],
-
-    packages=find_packages(exclude=('jwt.tests', )),
-    package_data={"jwt": ["py.typed"]},
-
-    install_requires=requires,
-    python_requires='>= 3.6',
-)
+setup()
