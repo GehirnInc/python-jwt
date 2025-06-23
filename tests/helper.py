@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +14,10 @@
 
 import os
 
-
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_testdata(name, mode='rb'):
-    abspath = os.path.normpath(os.path.join(here, 'testdata', name))
+def load_testdata(name, mode="rb"):
+    abspath = os.path.normpath(os.path.join(here, "testdata", name))
     with open(abspath, mode=mode) as fh:
         return fh.read()

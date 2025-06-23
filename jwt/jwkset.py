@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +15,10 @@
 from collections import UserList
 from typing import TYPE_CHECKING
 
-from .jwk import AbstractJWKBase, jwk_from_dict
+from .jwk import (
+    AbstractJWKBase,
+    jwk_from_dict,
+)
 
 if TYPE_CHECKING:
     UserListBase = UserList[AbstractJWKBase]
@@ -35,8 +36,11 @@ class JWKSet(UserListBase):
         # equivalent alternatives by the application using them.)
 
         if kid and kty:
-            return [key for key in self.data
-                    if key.get_kty() == kty and key.get_kid() == kid]
+            return [
+                key
+                for key in self.data
+                if key.get_kty() == kty and key.get_kid() == kid
+            ]
         if kid:
             return [key for key in self.data if key.get_kid() == kid]
         if kty:
@@ -46,9 +50,9 @@ class JWKSet(UserListBase):
 
     def to_dict(self, public_only=True):
         keys = [key.to_dict(public_only=public_only) for key in self.data]
-        return {'keys': keys}
+        return {"keys": keys}
 
     @classmethod
     def from_dict(cls, dct):
-        keys = [jwk_from_dict(key_dct) for key_dct in dct.get('keys', [])]
+        keys = [jwk_from_dict(key_dct) for key_dct in dct.get("keys", [])]
         return cls(keys)

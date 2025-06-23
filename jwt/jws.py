@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,26 +15,24 @@
 import json
 from typing import (
     AbstractSet,
-    Dict,
     Optional,
-    Tuple,
 )
 
 from .exceptions import (
-    JWSEncodeError,
     JWSDecodeError,
+    JWSEncodeError,
 )
 from .jwa import (
-    supported_signing_algorithms,
     AbstractSigningAlgorithm,
+    supported_signing_algorithms,
 )
 from .jwk import AbstractJWKBase
 from .utils import (
-    b64encode,
     b64decode,
+    b64encode,
 )
 
-__all__ = ['JWS']
+__all__ = ["JWS"]
 
 
 class JWS:
@@ -48,57 +44,69 @@ class JWS:
         try:
             return self._supported_algs[alg]
         except KeyError:
-            raise JWSDecodeError('Unsupported signing algorithm.')
+            raise JWSDecodeError("Unsupported signing algorithm.")
 
-    def encode(self, message: bytes, key: Optional[AbstractJWKBase] = None,
-               alg='HS256',
-               optional_headers: Optional[Dict[str, str]] = None) -> str:
+    def encode(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase] = None,
+        alg="HS256",
+        optional_headers: Optional[dict[str, str]] = None,
+    ) -> str:
         if alg not in self._supported_algs:  # pragma: no cover
-            raise JWSEncodeError('unsupported algorithm: {}'.format(alg))
+            raise JWSEncodeError(f"unsupported algorithm: {alg}")
         alg_impl = self._retrieve_alg(alg)
 
         header = optional_headers.copy() if optional_headers else {}
-        header['alg'] = alg
+        header["alg"] = alg
 
         header_b64 = b64encode(
-            json.dumps(header, separators=(',', ':')).encode('ascii'))
+            json.dumps(header, separators=(",", ":")).encode("ascii")
+        )
         message_b64 = b64encode(message)
-        signing_message = header_b64 + '.' + message_b64
+        signing_message = header_b64 + "." + message_b64
 
-        signature = alg_impl.sign(signing_message.encode('ascii'), key)
+        signature = alg_impl.sign(signing_message.encode("ascii"), key)
         signature_b64 = b64encode(signature)
 
-        return signing_message + '.' + signature_b64
+        return signing_message + "." + signature_b64
 
     def _decode_segments(
-            self, message: str) -> Tuple[Dict[str, str], bytes, bytes, str]:
+        self, message: str
+    ) -> tuple[dict[str, str], bytes, bytes, str]:
         try:
-            signing_message, signature_b64 = message.rsplit('.', 1)
-            header_b64, message_b64 = signing_message.split('.')
+            signing_message, signature_b64 = message.rsplit(".", 1)
+            header_b64, message_b64 = signing_message.split(".")
         except ValueError:
-            raise JWSDecodeError('malformed JWS payload')
+            raise JWSDecodeError("malformed JWS payload")
 
-        header = json.loads(b64decode(header_b64).decode('ascii'))
+        header = json.loads(b64decode(header_b64).decode("ascii"))
         message_bin = b64decode(message_b64)
         signature = b64decode(signature_b64)
         return header, message_bin, signature, signing_message
 
-    def decode(self, message: str, key: Optional[AbstractJWKBase] = None,
-               do_verify=True,
-               algorithms: Optional[AbstractSet[str]] = None) -> bytes:
+    def decode(
+        self,
+        message: str,
+        key: Optional[AbstractJWKBase] = None,
+        do_verify=True,
+        algorithms: Optional[AbstractSet[str]] = None,
+    ) -> bytes:
         if algorithms is None:
             algorithms = set(supported_signing_algorithms().keys())
 
-        header, message_bin, signature, signing_message = \
+        header, message_bin, signature, signing_message = (
             self._decode_segments(message)
+        )
 
-        alg_value = header['alg']
+        alg_value = header["alg"]
         if alg_value not in algorithms:
-            raise JWSDecodeError('Unsupported signing algorithm.')
+            raise JWSDecodeError("Unsupported signing algorithm.")
 
         alg_impl = self._retrieve_alg(alg_value)
         if do_verify and not alg_impl.verify(
-                signing_message.encode('ascii'), key, signature):
-            raise JWSDecodeError('JWS passed could not be validated')
+            signing_message.encode("ascii"), key, signature
+        ):
+            raise JWSDecodeError("JWS passed could not be validated")
 
         return message_bin

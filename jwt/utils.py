@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +13,24 @@
 # limitations under the License.
 
 from base64 import (
-    urlsafe_b64encode,
     urlsafe_b64decode,
+    urlsafe_b64encode,
 )
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 
 
 def b64encode(s: bytes) -> str:
     s_bin = urlsafe_b64encode(s)
-    s_bin = s_bin.replace(b'=', b'')
-    return s_bin.decode('ascii')
+    s_bin = s_bin.replace(b"=", b"")
+    return s_bin.decode("ascii")
 
 
 def b64decode(s: str) -> bytes:
-    s_bin = s.encode('ascii')
-    s_bin += b'=' * (4 - len(s_bin) % 4)
+    s_bin = s.encode("ascii")
+    s_bin += b"=" * (4 - len(s_bin) % 4)
     return urlsafe_b64decode(s_bin)
 
 
@@ -40,7 +41,7 @@ def uint_b64encode(value: int) -> str:
         length += 1
         rem >>= 8
 
-    uint_bin = value.to_bytes(length, 'big', signed=False)
+    uint_bin = value.to_bytes(length, "big", signed=False)
     return b64encode(uint_bin)
 
 
@@ -60,7 +61,7 @@ def get_time_from_int(value: int) -> datetime:
     :return: datetime
     """
     if not isinstance(value, int):  # pragma: no cover
-        raise TypeError('an int is required')
+        raise TypeError("an int is required")
     return datetime.fromtimestamp(value, timezone.utc)
 
 
@@ -71,5 +72,5 @@ def get_int_from_datetime(value: datetime) -> int:
     :return: Seconds since the Epoch
     """
     if not isinstance(value, datetime):  # pragma: no cover
-        raise TypeError('a datetime is required')
+        raise TypeError("a datetime is required")
     return int(value.timestamp())

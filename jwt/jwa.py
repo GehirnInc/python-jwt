@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +16,6 @@ import hashlib
 import hmac
 from typing import (
     Any,
-    Dict,
     Callable,
     Optional,
 )
@@ -35,13 +32,13 @@ from .jwk import AbstractJWKBase
 
 
 def std_hash_by_alg(alg: str) -> Callable[[bytes], object]:
-    if alg.endswith('S256'):
+    if alg.endswith("S256"):
         return hashlib.sha256
-    if alg.endswith('S384'):
+    if alg.endswith("S384"):
         return hashlib.sha384
-    if alg.endswith('S512'):
+    if alg.endswith("S512"):
         return hashlib.sha512
-    raise ValueError('{} is not supported'.format(alg))
+    raise ValueError(f"{alg} is not supported")
 
 
 class AbstractSigningAlgorithm:
@@ -49,19 +46,27 @@ class AbstractSigningAlgorithm:
     def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
-    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
-               signature: bytes) -> bool:
+    def verify(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase],
+        signature: bytes,
+    ) -> bool:
         raise NotImplementedError()  # pragma: no cover
 
 
 class NoneAlgorithm(AbstractSigningAlgorithm):
 
     def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
-        return b''
+        return b""
 
-    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
-               signature: bytes) -> bool:
-        return hmac.compare_digest(signature, b'')
+    def verify(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase],
+        signature: bytes,
+    ) -> bool:
+        return hmac.compare_digest(signature, b"")
 
 
 none = NoneAlgorithm()
@@ -73,8 +78,8 @@ class HMACAlgorithm(AbstractSigningAlgorithm):
         self.hash_fun = hash_fun
 
     def _check_key(self, key: Optional[AbstractJWKBase]) -> AbstractJWKBase:
-        if not key or key.get_kty() != 'oct':
-            raise InvalidKeyTypeError('Octet key is required')
+        if not key or key.get_kty() != "oct":
+            raise InvalidKeyTypeError("Octet key is required")
         return key
 
     def _sign(self, message: bytes, key: bytes) -> bytes:
@@ -84,8 +89,12 @@ class HMACAlgorithm(AbstractSigningAlgorithm):
         key = self._check_key(key)
         return key.sign(message, signer=self._sign)
 
-    def verify(self, message: bytes, key: Optional[AbstractJWKBase],
-               signature: bytes) -> bool:
+    def verify(
+        self,
+        message: bytes,
+        key: Optional[AbstractJWKBase],
+        signature: bytes,
+    ) -> bool:
         key = self._check_key(key)
         return key.verify(message, signature, signer=self._sign)
 
@@ -105,17 +114,19 @@ class RSAAlgorithm(AbstractSigningAlgorithm):
         key: Optional[AbstractJWKBase],
         must_sign_key: bool = False,
     ) -> AbstractJWKBase:
-        if not key or key.get_kty() != 'RSA':
-            raise InvalidKeyTypeError('RSA key is required')
+        if not key or key.get_kty() != "RSA":
+            raise InvalidKeyTypeError("RSA key is required")
         if must_sign_key and not key.is_sign_key():
             raise InvalidKeyTypeError(
-                'a RSA private key is required, but passed is RSA public key')
+                "a RSA private key is required, but passed is RSA public key"
+            )
         return key
 
     def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
         key = self._check_key(key, must_sign_key=True)
-        return key.sign(message, hash_fun=self.hash_fun,
-                        padding=padding.PKCS1v15())
+        return key.sign(
+            message, hash_fun=self.hash_fun, padding=padding.PKCS1v15()
+        )
 
     def verify(
         self,
@@ -124,8 +135,12 @@ class RSAAlgorithm(AbstractSigningAlgorithm):
         signature: bytes,
     ) -> bool:
         key = self._check_key(key)
-        return key.verify(message, signature, hash_fun=self.hash_fun,
-                          padding=padding.PKCS1v15())
+        return key.verify(
+            message,
+            signature,
+            hash_fun=self.hash_fun,
+            padding=padding.PKCS1v15(),
+        )
 
 
 RS256 = RSAAlgorithm(SHA256)
@@ -142,11 +157,12 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
         key: Optional[AbstractJWKBase],
         must_sign_key: bool = False,
     ) -> AbstractJWKBase:
-        if not key or key.get_kty() != 'RSA':
-            raise InvalidKeyTypeError('RSA key is required')
+        if not key or key.get_kty() != "RSA":
+            raise InvalidKeyTypeError("RSA key is required")
         if must_sign_key and not key.is_sign_key():
             raise InvalidKeyTypeError(
-                'a RSA private key is required, but passed is RSA public key')
+                "a RSA private key is required, but passed is RSA public key"
+            )
         return key
 
     def sign(self, message: bytes, key: Optional[AbstractJWKBase]) -> bytes:
@@ -164,7 +180,7 @@ class PSSRSAAlgorithm(AbstractSigningAlgorithm):
         self,
         message: bytes,
         key: Optional[AbstractJWKBase],
-        signature: bytes
+        signature: bytes,
     ) -> bool:
         key = self._check_key(key)
         return key.verify(
@@ -183,16 +199,16 @@ PS384 = PSSRSAAlgorithm(SHA384)
 PS512 = PSSRSAAlgorithm(SHA512)
 
 
-def supported_signing_algorithms() -> Dict[str, AbstractSigningAlgorithm]:
+def supported_signing_algorithms() -> dict[str, AbstractSigningAlgorithm]:
     # NOTE(yosida95): exclude vulnerable 'none' algorithm by default.
     return {
-        'HS256': HS256,
-        'HS384': HS384,
-        'HS512': HS512,
-        'RS256': RS256,
-        'RS384': RS384,
-        'RS512': RS512,
-        'PS256': PS256,
-        'PS384': PS384,
-        'PS512': PS512,
+        "HS256": HS256,
+        "HS384": HS384,
+        "HS512": HS512,
+        "RS256": RS256,
+        "RS384": RS384,
+        "RS512": RS512,
+        "PS256": PS256,
+        "PS384": PS384,
+        "PS512": PS512,
     }

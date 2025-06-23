@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright 2017 Gehirn Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,42 +26,55 @@ class JWKSetTest(TestCase):
     def setUp(self):
         self.inst = JWKSet()
 
-        self.oct_json = json.loads(load_testdata('oct.json', 'r'))
+        self.oct_json = json.loads(load_testdata("oct.json", "r"))
         self.inst.append(jwk_from_dict(self.oct_json))
 
-        self.rsa_json = json.loads(load_testdata('rsa_privkey_full.json', 'r'))
-        self.rsa_pub_json = json.loads(load_testdata('rsa_pubkey.json', 'r'))
+        self.rsa_json = json.loads(load_testdata("rsa_privkey_full.json", "r"))
+        self.rsa_pub_json = json.loads(load_testdata("rsa_pubkey.json", "r"))
         self.inst.append(jwk_from_dict(self.rsa_json))
 
     def test_filter_keys(self):
         self.assertEqual(
             [key.to_dict(public_only=True) for key in self.inst.filter_keys()],
-            [self.oct_json, self.rsa_pub_json])
+            [self.oct_json, self.rsa_pub_json],
+        )
 
         self.assertEqual(
-            [key.to_dict(public_only=True)
-             for key in self.inst.filter_keys(
-                 kid='HMAC key used in JWS A.1 example')],
-            [self.oct_json])
+            [
+                key.to_dict(public_only=True)
+                for key in self.inst.filter_keys(
+                    kid="HMAC key used in JWS A.1 example"
+                )
+            ],
+            [self.oct_json],
+        )
 
         self.assertEqual(
-            [key.to_dict(public_only=True)
-             for key in self.inst.filter_keys(kty='RSA')],
-            [self.rsa_pub_json])
+            [
+                key.to_dict(public_only=True)
+                for key in self.inst.filter_keys(kty="RSA")
+            ],
+            [self.rsa_pub_json],
+        )
 
         self.assertEqual(
-            [key.to_dict(public_only=True)
-             for key in self.inst.filter_keys(
-                 kid='HMAC key used in JWS A.1 example', kty='oct')],
-            [self.oct_json])
+            [
+                key.to_dict(public_only=True)
+                for key in self.inst.filter_keys(
+                    kid="HMAC key used in JWS A.1 example", kty="oct"
+                )
+            ],
+            [self.oct_json],
+        )
 
     def test_to_dict(self):
         self.maxDiff = None
         self.assertEqual(
             self.inst.to_dict(public_only=True),
-            {'keys': [self.oct_json, self.rsa_pub_json]})
+            {"keys": [self.oct_json, self.rsa_pub_json]},
+        )
 
     def test_from_dict(self):
-        inst = JWKSet.from_dict({'keys': [self.oct_json, self.rsa_pub_json]})
+        inst = JWKSet.from_dict({"keys": [self.oct_json, self.rsa_pub_json]})
         self.assertEqual(inst[0].to_dict(public_only=True), self.oct_json)
         self.assertEqual(inst[1].to_dict(public_only=True), self.rsa_pub_json)
