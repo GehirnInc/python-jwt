@@ -46,7 +46,7 @@ dev = [
 ]
 
 test = [
-    "pytest ~= 6.0",
+    "pytest >= 6,< 9",
     "pytest-cov",
     "freezegun",
 ]
